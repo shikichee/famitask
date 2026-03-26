@@ -3,6 +3,9 @@
 import { AppShell } from '@/components/app-shell';
 import { useFamilyMembers } from '@/hooks/use-family-members';
 import { useCompletions } from '@/hooks/use-completions';
+import { useThanks } from '@/hooks/use-thanks';
+import { ThanksButton } from '@/components/history/thanks-button';
+import { ThanksOverlay } from '@/components/celebration/thanks-overlay';
 import { Completion, FamilyMember } from '@/types/database';
 
 function formatDate(dateStr: string): string {
@@ -36,59 +39,94 @@ export default function HistoryPage() {
   const { completions } = useCompletions();
   const memberMap = new Map<string, FamilyMember>(members.map(m => [m.id, m]));
 
+  return (
+    <AppShell>
+      {({ currentMemberId, isChild }) => (
+        <HistoryContent
+          currentMemberId={currentMemberId}
+          isChild={isChild}
+          completions={completions}
+          memberMap={memberMap}
+        />
+      )}
+    </AppShell>
+  );
+}
+
+function HistoryContent({
+  currentMemberId,
+  isChild,
+  completions,
+  memberMap,
+}: {
+  currentMemberId: string;
+  isChild: boolean;
+  completions: Completion[];
+  memberMap: Map<string, FamilyMember>;
+}) {
+  const { thanksList, sendThanks, latestReceivedThanks, clearReceivedThanks } = useThanks(currentMemberId);
   const grouped = groupByDate(completions);
 
   return (
-    <AppShell>
-      {({ isChild }) => (
-        <div className="space-y-4">
-          <h2 className={`font-bold ${isChild ? 'text-xl' : 'text-lg'}`}>
-            {isChild ? 'りれき' : '完了履歴'}
-          </h2>
+    <div className="space-y-4">
+      <h2 className={`font-bold ${isChild ? 'text-xl' : 'text-lg'}`}>
+        {isChild ? 'りれき' : '完了履歴'}
+      </h2>
 
-          {completions.length === 0 ? (
-            <div className="flex flex-col items-center py-16 text-muted-foreground">
-              <span className="text-4xl mb-3">📝</span>
-              <p>{isChild ? 'まだりれきがないよ' : 'まだ履歴がありません'}</p>
-            </div>
-          ) : (
-            [...grouped.entries()].map(([dateKey, items]) => (
-              <div key={dateKey}>
-                <h3 className="text-sm font-semibold text-muted-foreground mb-2">
-                  {formatGroupDate(dateKey)}
-                </h3>
-                <div className="space-y-2">
-                  {items.map((item) => {
-                    const member = memberMap.get(item.member_id);
-                    return (
-                      <div
-                        key={item.id}
-                        className="flex items-center gap-3 p-3 rounded-xl bg-card border"
-                      >
-                        <span className={isChild ? 'text-xl' : 'text-lg'}>{item.category_emoji}</span>
-                        <div className="flex-1 min-w-0">
-                          <p className={`font-medium truncate ${isChild ? 'text-base' : 'text-sm'}`}>
-                            {item.task_title}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {formatDate(item.completed_at)}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className={isChild ? 'text-lg' : 'text-base'}>{member?.avatar}</span>
-                          <span className="text-sm font-bold text-amber-500">
-                            +{item.points}pt
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))
-          )}
+      {completions.length === 0 ? (
+        <div className="flex flex-col items-center py-16 text-muted-foreground">
+          <span className="text-4xl mb-3">📝</span>
+          <p>{isChild ? 'まだりれきがないよ' : 'まだ履歴がありません'}</p>
         </div>
+      ) : (
+        [...grouped.entries()].map(([dateKey, items]) => (
+          <div key={dateKey}>
+            <h3 className="text-sm font-semibold text-muted-foreground mb-2">
+              {formatGroupDate(dateKey)}
+            </h3>
+            <div className="space-y-2">
+              {items.map((item) => {
+                const member = memberMap.get(item.member_id);
+                return (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-card border"
+                  >
+                    <span className={isChild ? 'text-xl' : 'text-lg'}>{item.category_emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-medium truncate ${isChild ? 'text-base' : 'text-sm'}`}>
+                        {item.task_title}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(item.completed_at)}
+                      </p>
+                      <ThanksButton
+                        completionId={item.id}
+                        completionMemberId={item.member_id}
+                        currentMemberId={currentMemberId}
+                        thanksList={thanksList}
+                        members={memberMap}
+                        onSendThanks={sendThanks}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={isChild ? 'text-lg' : 'text-base'}>{member?.avatar}</span>
+                      <span className="text-sm font-bold text-amber-500">
+                        +{item.points}pt
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))
       )}
-    </AppShell>
+
+      <ThanksOverlay
+        show={!!latestReceivedThanks}
+        onDone={clearReceivedThanks}
+      />
+    </div>
   );
 }

@@ -38,3 +38,11 @@ export type Completion = {
   points: number;
   completed_at: string;
 };
+
+export type Thanks = {
+  id: string;
+  completion_id: string;
+  from_member_id: string;
+  to_member_id: string;
+  created_at: string;
+};
