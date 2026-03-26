@@ -5,11 +5,12 @@ import { AppShell } from '@/components/app-shell';
 import { TaskList } from '@/components/board/task-list';
 import { QuickAdd } from '@/components/board/quick-add';
 import { CelebrationOverlay } from '@/components/celebration/celebration-overlay';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useTasks, useCategories } from '@/hooks/use-tasks';
 import { useFamilyMembers } from '@/hooks/use-family-members';
 
 export default function BoardPage() {
-  const { tasks, addTask, completeTask } = useTasks();
+  const { tasks, addTask, completeTask, assignTask } = useTasks();
   const categories = useCategories();
   const members = useFamilyMembers();
 
@@ -37,30 +38,75 @@ export default function BoardPage() {
     [tasks, categories, members, completeTask],
   );
 
+  const handleAssign = useCallback(
+    async (taskId: string, memberId: string) => {
+      await assignTask(taskId, memberId);
+    },
+    [assignTask],
+  );
+
   return (
     <AppShell>
-      {({ currentMemberId, isChild }) => (
-        <>
-          <TaskList
-            tasks={tasks}
-            categories={categories}
-            isChild={isChild}
-            onComplete={(taskId) => handleComplete(taskId, currentMemberId)}
-          />
-          <QuickAdd
-            categories={categories}
-            currentMemberId={currentMemberId}
-            isChild={isChild}
-            onAdd={addTask}
-          />
-          <CelebrationOverlay
-            show={celebration.show}
-            points={celebration.points}
-            memberName={celebration.memberName}
-            onDone={() => setCelebration(prev => ({ ...prev, show: false }))}
-          />
-        </>
-      )}
+      {({ currentMemberId, isChild }) => {
+        const unassignedTasks = tasks.filter(t => t.assigned_to === null);
+
+        return (
+          <>
+            <Tabs defaultValue="everyone">
+              <TabsList className="w-full overflow-x-auto">
+                <TabsTrigger value="everyone">
+                  みんなの
+                </TabsTrigger>
+                {members.map(member => (
+                  <TabsTrigger key={member.id} value={member.id}>
+                    <span>{member.avatar}</span>
+                    <span className="ml-1">{member.name}</span>
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+
+              <TabsContent value="everyone">
+                <TaskList
+                  tasks={unassignedTasks}
+                  categories={categories}
+                  members={members}
+                  currentMemberId={currentMemberId}
+                  isChild={isChild}
+                  onComplete={(taskId) => handleComplete(taskId, currentMemberId)}
+                  onAssign={handleAssign}
+                />
+              </TabsContent>
+
+              {members.map(member => (
+                <TabsContent key={member.id} value={member.id}>
+                  <TaskList
+                    tasks={tasks.filter(t => t.assigned_to === member.id)}
+                    categories={categories}
+                    members={members}
+                    currentMemberId={currentMemberId}
+                    isChild={isChild}
+                    onComplete={(taskId) => handleComplete(taskId, currentMemberId)}
+                    onAssign={handleAssign}
+                  />
+                </TabsContent>
+              ))}
+            </Tabs>
+
+            <QuickAdd
+              categories={categories}
+              currentMemberId={currentMemberId}
+              isChild={isChild}
+              onAdd={addTask}
+            />
+            <CelebrationOverlay
+              show={celebration.show}
+              points={celebration.points}
+              memberName={celebration.memberName}
+              onDone={() => setCelebration(prev => ({ ...prev, show: false }))}
+            />
+          </>
+        );
+      }}
     </AppShell>
   );
 }

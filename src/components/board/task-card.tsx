@@ -1,13 +1,17 @@
 'use client';
 
-import { Task, TaskCategory } from '@/types/database';
+import { useState } from 'react';
+import { Task, TaskCategory, FamilyMember } from '@/types/database';
 import { Badge } from '@/components/ui/badge';
 
 interface TaskCardProps {
   task: Task;
   category: TaskCategory | undefined;
   isChild: boolean;
+  members: FamilyMember[];
+  currentMemberId: string;
   onComplete: (taskId: string) => void;
+  onAssign: (taskId: string, memberId: string) => void;
 }
 
 const POINTS_STARS: Record<number, string> = {
@@ -16,7 +20,11 @@ const POINTS_STARS: Record<number, string> = {
   3: '★★★',
 };
 
-export function TaskCard({ task, category, isChild, onComplete }: TaskCardProps) {
+export function TaskCard({ task, category, isChild, members, currentMemberId, onComplete, onAssign }: TaskCardProps) {
+  const [showDropdown, setShowDropdown] = useState(false);
+  const assignedMember = task.assigned_to ? members.find(m => m.id === task.assigned_to) : null;
+  const otherMembers = members.filter(m => m.id !== currentMemberId);
+
   return (
     <div className="flex items-center gap-3 p-3 rounded-xl bg-card border transition-all hover:shadow-sm active:scale-[0.98]">
       <span className={`${isChild ? 'text-2xl' : 'text-xl'} shrink-0`}>
@@ -39,21 +47,72 @@ export function TaskCard({ task, category, isChild, onComplete }: TaskCardProps)
               おとな
             </Badge>
           )}
+          {assignedMember && (
+            <span className="text-xs text-muted-foreground">
+              → {assignedMember.avatar} {assignedMember.name}
+            </span>
+          )}
         </div>
       </div>
 
-      <button
-        onClick={() => onComplete(task.id)}
-        className={`
-          shrink-0 flex items-center justify-center rounded-full
-          bg-emerald-500 text-white
-          transition-all hover:bg-emerald-600 active:scale-90
-          ${isChild ? 'w-12 h-12 text-xl' : 'w-10 h-10 text-lg'}
-        `}
-        aria-label="完了"
-      >
-        ✓
-      </button>
+      <div className="flex items-center gap-1.5 shrink-0">
+        {!task.assigned_to && (
+          <>
+            <button
+              onClick={() => onAssign(task.id, currentMemberId)}
+              className={`
+                rounded-lg bg-blue-500 text-white font-bold
+                transition-all hover:bg-blue-600 active:scale-90
+                ${isChild ? 'px-3 py-2 text-sm' : 'px-2 py-1.5 text-xs'}
+              `}
+            >
+              やる!
+            </button>
+            <div className="relative">
+              <button
+                onClick={() => setShowDropdown(!showDropdown)}
+                className={`
+                  rounded-lg bg-orange-400 text-white font-bold
+                  transition-all hover:bg-orange-500 active:scale-90
+                  ${isChild ? 'px-3 py-2 text-sm' : 'px-2 py-1.5 text-xs'}
+                `}
+              >
+                おねがい▼
+              </button>
+              {showDropdown && (
+                <div className="absolute right-0 top-full mt-1 bg-card border rounded-lg shadow-lg z-10 min-w-[120px]">
+                  {otherMembers.map(member => (
+                    <button
+                      key={member.id}
+                      onClick={() => {
+                        onAssign(task.id, member.id);
+                        setShowDropdown(false);
+                      }}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted transition-colors first:rounded-t-lg last:rounded-b-lg"
+                    >
+                      <span>{member.avatar}</span>
+                      <span>{member.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        <button
+          onClick={() => onComplete(task.id)}
+          className={`
+            shrink-0 flex items-center justify-center rounded-full
+            bg-emerald-500 text-white
+            transition-all hover:bg-emerald-600 active:scale-90
+            ${isChild ? 'w-12 h-12 text-xl' : 'w-10 h-10 text-lg'}
+          `}
+          aria-label="完了"
+        >
+          ✓
+        </button>
+      </div>
     </div>
   );
 }

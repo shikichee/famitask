@@ -16,13 +16,13 @@ const DEMO_CATEGORIES: TaskCategory[] = [
 ];
 
 const DEMO_TASKS: Task[] = [
-  { id: '1', title: '食器洗い', category_id: 'b0000000-0000-0000-0000-000000000003', status: 'pending', adult_only: false, points: 2, created_by: 'a0000000-0000-0000-0000-000000000001', completed_by: null, completed_at: null, is_recurring: true, created_at: new Date().toISOString() },
-  { id: '2', title: '洗濯物たたむ', category_id: 'b0000000-0000-0000-0000-000000000002', status: 'pending', adult_only: false, points: 2, created_by: 'a0000000-0000-0000-0000-000000000001', completed_by: null, completed_at: null, is_recurring: true, created_at: new Date().toISOString() },
-  { id: '3', title: 'お風呂掃除', category_id: 'b0000000-0000-0000-0000-000000000001', status: 'pending', adult_only: false, points: 3, created_by: 'a0000000-0000-0000-0000-000000000002', completed_by: null, completed_at: null, is_recurring: true, created_at: new Date().toISOString() },
-  { id: '4', title: 'ゴミ出し', category_id: 'b0000000-0000-0000-0000-000000000001', status: 'pending', adult_only: false, points: 1, created_by: 'a0000000-0000-0000-0000-000000000002', completed_by: null, completed_at: null, is_recurring: true, created_at: new Date().toISOString() },
-  { id: '5', title: '習い事の準備', category_id: 'b0000000-0000-0000-0000-000000000005', status: 'pending', adult_only: false, points: 2, created_by: 'a0000000-0000-0000-0000-000000000001', completed_by: null, completed_at: null, is_recurring: false, created_at: new Date().toISOString() },
-  { id: '6', title: '病院予約', category_id: 'b0000000-0000-0000-0000-000000000007', status: 'pending', adult_only: true, points: 2, created_by: 'a0000000-0000-0000-0000-000000000001', completed_by: null, completed_at: null, is_recurring: false, created_at: new Date().toISOString() },
-  { id: '7', title: '保険の書類提出', category_id: 'b0000000-0000-0000-0000-000000000007', status: 'pending', adult_only: true, points: 3, created_by: 'a0000000-0000-0000-0000-000000000002', completed_by: null, completed_at: null, is_recurring: false, created_at: new Date().toISOString() },
+  { id: '1', title: '食器洗い', category_id: 'b0000000-0000-0000-0000-000000000003', status: 'pending', adult_only: false, points: 2, created_by: 'a0000000-0000-0000-0000-000000000001', completed_by: null, completed_at: null, assigned_to: null, is_recurring: true, created_at: new Date().toISOString() },
+  { id: '2', title: '洗濯物たたむ', category_id: 'b0000000-0000-0000-0000-000000000002', status: 'pending', adult_only: false, points: 2, created_by: 'a0000000-0000-0000-0000-000000000001', completed_by: null, completed_at: null, assigned_to: null, is_recurring: true, created_at: new Date().toISOString() },
+  { id: '3', title: 'お風呂掃除', category_id: 'b0000000-0000-0000-0000-000000000001', status: 'pending', adult_only: false, points: 3, created_by: 'a0000000-0000-0000-0000-000000000002', completed_by: null, completed_at: null, assigned_to: null, is_recurring: true, created_at: new Date().toISOString() },
+  { id: '4', title: 'ゴミ出し', category_id: 'b0000000-0000-0000-0000-000000000001', status: 'pending', adult_only: false, points: 1, created_by: 'a0000000-0000-0000-0000-000000000002', completed_by: null, completed_at: null, assigned_to: null, is_recurring: true, created_at: new Date().toISOString() },
+  { id: '5', title: '習い事の準備', category_id: 'b0000000-0000-0000-0000-000000000005', status: 'pending', adult_only: false, points: 2, created_by: 'a0000000-0000-0000-0000-000000000001', completed_by: null, completed_at: null, assigned_to: null, is_recurring: false, created_at: new Date().toISOString() },
+  { id: '6', title: '病院予約', category_id: 'b0000000-0000-0000-0000-000000000007', status: 'pending', adult_only: true, points: 2, created_by: 'a0000000-0000-0000-0000-000000000001', completed_by: null, completed_at: null, assigned_to: null, is_recurring: false, created_at: new Date().toISOString() },
+  { id: '7', title: '保険の書類提出', category_id: 'b0000000-0000-0000-0000-000000000007', status: 'pending', adult_only: true, points: 3, created_by: 'a0000000-0000-0000-0000-000000000002', completed_by: null, completed_at: null, assigned_to: null, is_recurring: false, created_at: new Date().toISOString() },
 ];
 
 export function useCategories() {
@@ -80,6 +80,7 @@ export function useTasks() {
         status: 'pending',
         completed_by: null,
         completed_at: null,
+        assigned_to: null,
         created_at: new Date().toISOString(),
       };
       setTasks(prev => [newTask, ...prev]);
@@ -143,5 +144,19 @@ export function useTasks() {
     return { task_title: task.title, points: task.points };
   }, [tasks]);
 
-  return { tasks, addTask, completeTask, refetch: fetchTasks };
+  const assignTask = useCallback(async (taskId: string, memberId: string) => {
+    if (!isSupabaseConfigured) {
+      setTasks(prev => prev.map(t =>
+        t.id === taskId ? { ...t, assigned_to: memberId } : t
+      ));
+      return;
+    }
+
+    await supabase
+      .from('tasks')
+      .update({ assigned_to: memberId })
+      .eq('id', taskId);
+  }, []);
+
+  return { tasks, addTask, completeTask, assignTask, refetch: fetchTasks };
 }

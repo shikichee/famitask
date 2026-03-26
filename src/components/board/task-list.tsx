@@ -1,16 +1,19 @@
 'use client';
 
-import { Task, TaskCategory } from '@/types/database';
+import { Task, TaskCategory, FamilyMember } from '@/types/database';
 import { TaskCard } from './task-card';
 
 interface TaskListProps {
   tasks: Task[];
   categories: TaskCategory[];
+  members: FamilyMember[];
+  currentMemberId: string;
   isChild: boolean;
   onComplete: (taskId: string) => void;
+  onAssign: (taskId: string, memberId: string) => void;
 }
 
-export function TaskList({ tasks, categories, isChild, onComplete }: TaskListProps) {
+export function TaskList({ tasks, categories, members, currentMemberId, isChild, onComplete, onAssign }: TaskListProps) {
   const filteredTasks = isChild
     ? tasks.filter(t => !t.adult_only)
     : tasks;
@@ -39,7 +42,10 @@ export function TaskList({ tasks, categories, isChild, onComplete }: TaskListPro
           task={task}
           category={categoryMap.get(task.category_id)}
           isChild={isChild}
+          members={members}
+          currentMemberId={currentMemberId}
           onComplete={onComplete}
+          onAssign={onAssign}
         />
       ))}
     </div>

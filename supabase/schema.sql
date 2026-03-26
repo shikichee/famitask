@@ -31,6 +31,7 @@ create table tasks (
   created_by uuid not null references family_members(id),
   completed_by uuid references family_members(id),
   completed_at timestamptz,
+  assigned_to uuid references family_members(id),
   is_recurring boolean not null default false,
   created_at timestamptz not null default now()
 );
@@ -50,6 +51,7 @@ create index idx_tasks_status on tasks(status);
 create index idx_tasks_category on tasks(category_id);
 create index idx_completions_member on completions(member_id);
 create index idx_completions_completed_at on completions(completed_at);
+create index idx_tasks_assigned_to on tasks(assigned_to);
 
 -- RPC: increment points atomically
 create or replace function increment_points(member_id uuid, amount integer)

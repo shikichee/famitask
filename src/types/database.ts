@@ -23,6 +23,7 @@ export type Task = {
   created_by: string;
   completed_by: string | null;
   completed_at: string | null;
+  assigned_to: string | null;
   is_recurring: boolean;
   created_at: string;
 };
