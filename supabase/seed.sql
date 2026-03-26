@@ -1,10 +1,10 @@
 -- Seed data for famitask
 
 -- Family Members
-insert into family_members (id, name, avatar, color, role, total_points) values
-  ('a0000000-0000-0000-0000-000000000001', '妻', '👩', '#E91E63', 'adult', 0),
-  ('a0000000-0000-0000-0000-000000000002', '夫', '👨', '#2196F3', 'adult', 0),
-  ('a0000000-0000-0000-0000-000000000003', '娘', '👧', '#FF9800', 'child', 0);
+insert into family_members (id, name, avatar, color, role, total_points, is_admin) values
+  ('a0000000-0000-0000-0000-000000000001', '妻', '👩', '#E91E63', 'adult', 0, false),
+  ('a0000000-0000-0000-0000-000000000002', '夫', '👨', '#2196F3', 'adult', 0, true),
+  ('a0000000-0000-0000-0000-000000000003', '娘', '👧', '#FF9800', 'child', 0, false);
 
 -- Task Categories
 insert into task_categories (id, name, emoji) values

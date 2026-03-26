@@ -1,26 +1,37 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { MEMBER_IDS } from '@/lib/constants';
+import { useAuthContext } from '@/components/providers/auth-provider';
 
 const STORAGE_KEY = 'famitask-current-member';
 
 export function useCurrentMember() {
-  const [currentMemberId, setCurrentMemberId] = useState<string>(MEMBER_IDS.wife);
+  const { member, isAdmin, isLoading: authLoading } = useAuthContext();
+  const [overrideMemberId, setOverrideMemberId] = useState<string | null>(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      setCurrentMemberId(stored);
+    if (isAdmin) {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        setOverrideMemberId(stored);
+      }
     }
-  }, []);
+  }, [isAdmin]);
 
-  const switchMember = useCallback((memberId: string) => {
-    setCurrentMemberId(memberId);
-    localStorage.setItem(STORAGE_KEY, memberId);
-  }, []);
+  const currentMemberId = isAdmin
+    ? overrideMemberId ?? member?.id ?? ''
+    : member?.id ?? '';
 
-  const isChild = currentMemberId === MEMBER_IDS.daughter;
+  const switchMember = useCallback(
+    (memberId: string) => {
+      if (!isAdmin) return;
+      setOverrideMemberId(memberId);
+      localStorage.setItem(STORAGE_KEY, memberId);
+    },
+    [isAdmin],
+  );
 
-  return { currentMemberId, switchMember, isChild };
+  const isChild = member?.role === 'child';
+
+  return { currentMemberId, switchMember, isChild, isAdmin, authLoading };
 }

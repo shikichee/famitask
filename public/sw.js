@@ -25,6 +25,18 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  // Only handle GET requests with http/https scheme
+  if (event.request.method !== 'GET' || !url.protocol.startsWith('http')) {
+    return;
+  }
+
+  // Skip Supabase auth requests to avoid interfering with auth token locks
+  if (url.hostname.includes('supabase') || url.pathname.includes('/auth/')) {
+    return;
+  }
+
   // Network first, fall back to cache
   event.respondWith(
     fetch(event.request)

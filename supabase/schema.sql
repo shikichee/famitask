@@ -10,7 +10,9 @@ create table family_members (
   avatar text not null,
   color text not null,
   role text not null check (role in ('adult', 'child')),
-  total_points integer not null default 0
+  total_points integer not null default 0,
+  auth_user_id uuid unique references auth.users(id),
+  is_admin boolean not null default false
 );
 
 -- Task Categories

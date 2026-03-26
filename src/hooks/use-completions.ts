@@ -1,7 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase-browser';
+
+const supabase = createClient();
+const isSupabaseConfigured = true;
 import { Completion } from '@/types/database';
 
 export function useCompletions() {

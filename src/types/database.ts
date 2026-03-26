@@ -5,6 +5,8 @@ export type FamilyMember = {
   color: string;
   role: 'adult' | 'child';
   total_points: number;
+  auth_user_id: string | null;
+  is_admin: boolean;
 };
 
 export type TaskCategory = {
