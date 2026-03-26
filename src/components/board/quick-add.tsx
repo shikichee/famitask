@@ -30,6 +30,7 @@ export function QuickAdd({ categories, currentMemberId, isChild, onAdd }: QuickA
   const [adultOnly, setAdultOnly] = useState(false);
   const [isRecurring, setIsRecurring] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const reset = useCallback(() => {
     setTitle('');
@@ -42,6 +43,7 @@ export function QuickAdd({ categories, currentMemberId, isChild, onAdd }: QuickA
   const handleSubmit = async () => {
     if (!title.trim() || !categoryId) return;
     setSubmitting(true);
+    setError(null);
     try {
       await onAdd({
         title: title.trim(),
@@ -53,6 +55,8 @@ export function QuickAdd({ categories, currentMemberId, isChild, onAdd }: QuickA
       });
       reset();
       setOpen(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'タスクの追加に失敗しました');
     } finally {
       setSubmitting(false);
     }
@@ -171,6 +175,10 @@ export function QuickAdd({ categories, currentMemberId, isChild, onAdd }: QuickA
                 />
               </div>
             </div>
+          )}
+
+          {error && (
+            <p className="text-sm text-red-500">{error}</p>
           )}
 
           <Button

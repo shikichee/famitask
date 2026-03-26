@@ -46,7 +46,7 @@ export function useTasks() {
 
   const fetchTasks = useCallback(async () => {
     if (!isSupabaseConfigured) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('tasks')
       .select('*')
       .eq('status', 'pending')
@@ -90,11 +90,17 @@ export function useTasks() {
       return newTask;
     }
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('tasks')
       .insert({ ...task, status: 'pending' })
       .select()
       .single();
+    if (error) {
+      throw new Error(error.message);
+    }
+    if (data) {
+      setTasks(prev => [data, ...prev]);
+    }
     return data;
   }, []);
 
@@ -124,6 +130,7 @@ export function useTasks() {
         member_id: memberId,
         points: task.points,
         completed_at: now,
+        task_id: taskId,
       });
 
     // Update member points
@@ -161,5 +168,17 @@ export function useTasks() {
       .eq('id', taskId);
   }, []);
 
-  return { tasks, addTask, completeTask, assignTask, refetch: fetchTasks };
+  const deleteTask = useCallback(async (taskId: string) => {
+    if (!isSupabaseConfigured) {
+      setTasks(prev => prev.filter(t => t.id !== taskId));
+      return;
+    }
+
+    await supabase
+      .from('tasks')
+      .delete()
+      .eq('id', taskId);
+  }, []);
+
+  return { tasks, addTask, completeTask, assignTask, deleteTask, refetch: fetchTasks };
 }
