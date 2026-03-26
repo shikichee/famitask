@@ -37,4 +37,5 @@ export type Completion = {
   member_id: string;
   points: number;
   completed_at: string;
+  task_id: string | null;
 };

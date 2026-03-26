@@ -124,6 +124,7 @@ export function useTasks() {
         member_id: memberId,
         points: task.points,
         completed_at: now,
+        task_id: taskId,
       });
 
     // Update member points
