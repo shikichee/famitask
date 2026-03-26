@@ -10,7 +10,7 @@ import { useTasks, useCategories } from '@/hooks/use-tasks';
 import { useFamilyMembers } from '@/hooks/use-family-members';
 
 export default function BoardPage() {
-  const { tasks, addTask, completeTask, assignTask } = useTasks();
+  const { tasks, addTask, completeTask, assignTask, deleteTask } = useTasks();
   const categories = useCategories();
   const members = useFamilyMembers();
 
@@ -74,6 +74,7 @@ export default function BoardPage() {
                   isChild={isChild}
                   onComplete={(taskId) => handleComplete(taskId, currentMemberId)}
                   onAssign={handleAssign}
+                  onDelete={deleteTask}
                 />
               </TabsContent>
 
@@ -87,6 +88,7 @@ export default function BoardPage() {
                     isChild={isChild}
                     onComplete={(taskId) => handleComplete(taskId, currentMemberId)}
                     onAssign={handleAssign}
+                    onDelete={deleteTask}
                   />
                 </TabsContent>
               ))}
