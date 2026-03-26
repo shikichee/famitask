@@ -11,9 +11,10 @@ interface TaskListProps {
   isChild: boolean;
   onComplete: (taskId: string) => void;
   onAssign: (taskId: string, memberId: string) => void;
+  onDelete: (taskId: string) => void;
 }
 
-export function TaskList({ tasks, categories, members, currentMemberId, isChild, onComplete, onAssign }: TaskListProps) {
+export function TaskList({ tasks, categories, members, currentMemberId, isChild, onComplete, onAssign, onDelete }: TaskListProps) {
   const filteredTasks = isChild
     ? tasks.filter(t => !t.adult_only)
     : tasks;
@@ -46,6 +47,7 @@ export function TaskList({ tasks, categories, members, currentMemberId, isChild,
           currentMemberId={currentMemberId}
           onComplete={onComplete}
           onAssign={onAssign}
+          onDelete={onDelete}
         />
       ))}
     </div>

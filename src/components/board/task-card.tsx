@@ -12,6 +12,7 @@ interface TaskCardProps {
   currentMemberId: string;
   onComplete: (taskId: string) => void;
   onAssign: (taskId: string, memberId: string) => void;
+  onDelete: (taskId: string) => void;
 }
 
 const POINTS_STARS: Record<number, string> = {
@@ -20,8 +21,9 @@ const POINTS_STARS: Record<number, string> = {
   3: '★★★',
 };
 
-export function TaskCard({ task, category, isChild, members, currentMemberId, onComplete, onAssign }: TaskCardProps) {
+export function TaskCard({ task, category, isChild, members, currentMemberId, onComplete, onAssign, onDelete }: TaskCardProps) {
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const assignedMember = task.assigned_to ? members.find(m => m.id === task.assigned_to) : null;
   const otherMembers = members.filter(m => m.id !== currentMemberId);
 
@@ -112,7 +114,50 @@ export function TaskCard({ task, category, isChild, members, currentMemberId, on
         >
           ✓
         </button>
+
+        {!isChild && (
+          <button
+            type="button"
+            onClick={() => setShowDeleteConfirm(true)}
+            className="shrink-0 p-1.5 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
+            aria-label="削除"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+            </svg>
+          </button>
+        )}
       </div>
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-card rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl space-y-4">
+            <p className="font-bold text-base">タスクを削除しますか？</p>
+            <p className="text-sm text-muted-foreground">
+              「{task.title}」を削除します。この操作は元に戻せません。
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 py-2 rounded-xl border text-sm font-medium"
+              >
+                キャンセル
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onDelete(task.id);
+                  setShowDeleteConfirm(false);
+                }}
+                className="flex-1 py-2 rounded-xl bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition-colors"
+              >
+                削除する
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

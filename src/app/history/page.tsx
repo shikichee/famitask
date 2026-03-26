@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { AppShell } from '@/components/app-shell';
 import { useFamilyMembers } from '@/hooks/use-family-members';
 import { useCompletions } from '@/hooks/use-completions';
@@ -33,10 +34,20 @@ function formatGroupDate(key: string): string {
 
 export default function HistoryPage() {
   const members = useFamilyMembers();
-  const { completions } = useCompletions();
+  const { completions, deleteCompletion } = useCompletions();
   const memberMap = new Map<string, FamilyMember>(members.map(m => [m.id, m]));
+  const [confirmTarget, setConfirmTarget] = useState<Completion | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const grouped = groupByDate(completions);
+
+  const handleDelete = async () => {
+    if (!confirmTarget) return;
+    setDeleting(true);
+    await deleteCompletion(confirmTarget);
+    setDeleting(false);
+    setConfirmTarget(null);
+  };
 
   return (
     <AppShell>
@@ -79,6 +90,18 @@ export default function HistoryPage() {
                           <span className="text-sm font-bold text-amber-500">
                             +{item.points}pt
                           </span>
+                          {!isChild && (
+                            <button
+                              type="button"
+                              onClick={() => setConfirmTarget(item)}
+                              className="ml-1 p-1 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
+                              aria-label="削除"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                              </svg>
+                            </button>
+                          )}
                         </div>
                       </div>
                     );
@@ -86,6 +109,37 @@ export default function HistoryPage() {
                 </div>
               </div>
             ))
+          )}
+
+          {/* Confirmation dialog */}
+          {confirmTarget && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+              <div className="bg-card rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl space-y-4">
+                <p className="font-bold text-base">履歴を削除しますか？</p>
+                <p className="text-sm text-muted-foreground">
+                  「{confirmTarget.task_title}」の完了記録を削除し、{confirmTarget.points}ptを差し引きます。
+                  {confirmTarget.task_id && 'タスクはボードに戻ります。'}
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmTarget(null)}
+                    className="flex-1 py-2 rounded-xl border text-sm font-medium"
+                    disabled={deleting}
+                  >
+                    キャンセル
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDelete}
+                    className="flex-1 py-2 rounded-xl bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+                    disabled={deleting}
+                  >
+                    {deleting ? '削除中...' : '削除する'}
+                  </button>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       )}
