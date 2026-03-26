@@ -46,7 +46,7 @@ export function useTasks() {
 
   const fetchTasks = useCallback(async () => {
     if (!isSupabaseConfigured) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('tasks')
       .select('*')
       .eq('status', 'pending')
@@ -90,11 +90,17 @@ export function useTasks() {
       return newTask;
     }
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('tasks')
       .insert({ ...task, status: 'pending' })
       .select()
       .single();
+    if (error) {
+      throw new Error(error.message);
+    }
+    if (data) {
+      setTasks(prev => [data, ...prev]);
+    }
     return data;
   }, []);
 

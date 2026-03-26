@@ -48,7 +48,7 @@ export default function BoardPage() {
   return (
     <AppShell>
       {({ currentMemberId, isChild }) => {
-        const unassignedTasks = tasks.filter(t => t.assigned_to === null);
+        const unassignedTasks = tasks.filter(t => !t.assigned_to);
 
         return (
           <>
