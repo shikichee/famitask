@@ -22,3 +22,11 @@ export const POINTS_LABELS: Record<number, string> = {
   2: 'ふつう',
   3: 'がんばった',
 };
+
+export const THANKS_MESSAGES = [
+  'ありがとう! 💕',
+  'きづいてくれた!',
+  'うれしいな!',
+  'たすかる〜!',
+  'だいすき!',
+];

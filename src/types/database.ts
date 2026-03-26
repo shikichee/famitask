@@ -39,3 +39,11 @@ export type Completion = {
   completed_at: string;
   task_id: string | null;
 };
+
+export type Thanks = {
+  id: string;
+  completion_id: string;
+  from_member_id: string;
+  to_member_id: string;
+  created_at: string;
+};
