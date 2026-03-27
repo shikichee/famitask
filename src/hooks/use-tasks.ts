@@ -42,7 +42,7 @@ export function useCategories() {
 }
 
 export function useTasks() {
-  const [tasks, setTasks] = useState<Task[]>(DEMO_TASKS);
+  const [tasks, setTasks] = useState<Task[]>(isSupabaseConfigured ? [] : DEMO_TASKS);
 
   const fetchTasks = useCallback(async () => {
     if (!isSupabaseConfigured) return;
@@ -59,8 +59,29 @@ export function useTasks() {
 
     const channel = supabase
       .channel('tasks_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
-        fetchTasks();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks' }, (payload: any) => {
+        const newTask = payload.new as Task;
+        if (newTask.status === 'pending') {
+          setTasks(prev => {
+            if (prev.some(t => t.id === newTask.id)) return prev;
+            return [newTask, ...prev];
+          });
+        }
+      })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tasks' }, (payload: any) => {
+        const updated = payload.new as Task;
+        if (updated.status !== 'pending') {
+          setTasks(prev => prev.filter(t => t.id !== updated.id));
+        } else {
+          setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
+        }
+      })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'tasks' }, (payload: any) => {
+        const deleted = payload.old as Task;
+        setTasks(prev => prev.filter(t => t.id !== deleted.id));
       })
       .subscribe(() => {
         fetchTasks();
