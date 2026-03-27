@@ -10,8 +10,15 @@ type PushState = {
   unsubscribe: () => Promise<void>;
 };
 
+function getInitialPermission(): NotificationPermission | 'unsupported' {
+  if (typeof window !== 'undefined' && 'Notification' in window) {
+    return Notification.permission;
+  }
+  return 'unsupported';
+}
+
 export function usePushNotifications(memberId: string | undefined): PushState {
-  const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('unsupported');
+  const [permission, setPermission] = useState(getInitialPermission);
   const [isSubscribed, setIsSubscribed] = useState(false);
   const isSupported = typeof window !== 'undefined'
     && 'serviceWorker' in navigator
@@ -20,7 +27,6 @@ export function usePushNotifications(memberId: string | undefined): PushState {
 
   useEffect(() => {
     if (!isSupported) return;
-    setPermission(Notification.permission);
 
     navigator.serviceWorker.ready.then((reg) => {
       reg.pushManager.getSubscription().then((sub) => {
