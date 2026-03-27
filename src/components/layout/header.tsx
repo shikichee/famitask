@@ -1,7 +1,7 @@
 'use client';
 
 import { FamilyMember } from '@/types/database';
-import { LogOut, Settings, Bell, BellOff } from 'lucide-react';
+import { LogOut, Settings, Bell, BellOff, RefreshCw } from 'lucide-react';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -16,9 +16,10 @@ import {
 interface HeaderProps {
   authMember: FamilyMember | null;
   onSignOut: () => void;
+  onRefresh?: () => void;
 }
 
-export function Header({ authMember, onSignOut }: HeaderProps) {
+export function Header({ authMember, onSignOut, onRefresh }: HeaderProps) {
   const { isSupported, permission, isSubscribed, subscribe, unsubscribe } =
     usePushNotifications(authMember?.id);
 
@@ -33,9 +34,20 @@ export function Header({ authMember, onSignOut }: HeaderProps) {
   return (
     <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-sm border-b">
       <div className="flex items-center justify-between px-4 py-3">
-        <h1 className="text-lg font-bold text-[#F28705]">
-          ファミタス
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-lg font-bold text-[#F28705]">
+            ファミタス
+          </h1>
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              className="flex items-center justify-center w-6 h-6 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              aria-label="タスクを更新"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
         <div className="flex items-center gap-3">
           {authMember && (
             <div className="flex items-center gap-2">
