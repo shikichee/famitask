@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 const NAV_ITEMS = [
   { href: '/', label: 'ボード', icon: '📋', childLabel: 'ボード' },
-  { href: '/stats', label: '統計', icon: '📊', childLabel: 'とうけい' },
+  { href: '/stats', label: 'がんばり', icon: '💪', childLabel: 'がんばり' },
   { href: '/history', label: 'りれき', icon: '📜', childLabel: 'りれき' },
 ];
 
