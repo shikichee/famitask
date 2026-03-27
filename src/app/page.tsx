@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { AppShell } from '@/components/app-shell';
-import { TaskList } from '@/components/board/task-list';
+import { TaskBoardDnd } from '@/components/board/task-board-dnd';
 import { QuickAdd } from '@/components/board/quick-add';
 import { CelebrationOverlay } from '@/components/celebration/celebration-overlay';
 import { TodaysEfforts } from '@/components/board/todays-efforts';
@@ -11,7 +11,7 @@ import { useFamilyMembers } from '@/hooks/use-family-members';
 import { PushNotificationPrompt } from '@/components/push-notification-prompt';
 
 export default function BoardPage() {
-  const { tasks, addTask, completeTask, assignTask, deleteTask } = useTasks();
+  const { tasks, addTask, completeTask, assignTask, deleteTask, reorderTasks, sendAssignNotification } = useTasks();
   const categories = useCategories();
   const members = useFamilyMembers();
 
@@ -42,9 +42,6 @@ export default function BoardPage() {
   return (
     <AppShell>
       {({ currentMemberId, isChild }) => {
-        const unassignedTasks = tasks.filter(t => !t.assigned_to);
-        const myTasks = tasks.filter(t => t.assigned_to === currentMemberId);
-        const otherMembers = members.filter(m => m.id !== currentMemberId);
         const currentMember = members.find(m => m.id === currentMemberId);
 
         const handleAssign = (taskId: string, memberId: string) => {
@@ -58,67 +55,23 @@ export default function BoardPage() {
         return (
           <>
             <PushNotificationPrompt memberId={currentMemberId} />
-            <div className="flex flex-col gap-6 pb-24">
-              <section>
-                <h2 className="text-lg font-bold mb-2 flex items-center gap-1">
-                  📋 {isChild ? 'みんなのおしごと' : 'みんなのタスク'}
-                </h2>
-                <TaskList
-                  tasks={unassignedTasks}
-                  categories={categories}
-                  members={members}
-                  currentMemberId={currentMemberId}
-                  isChild={isChild}
-                  onComplete={(taskId) => handleComplete(taskId, currentMemberId)}
-                  onAssign={handleAssign}
-                  onDelete={deleteTask}
-                />
-              </section>
-
-              <section>
-                <h2 className="text-lg font-bold mb-2 flex items-center gap-1">
-                  {currentMember?.avatar ?? '👤'} {isChild ? 'じぶんのおしごと' : 'じぶんのタスク'}
-                </h2>
-                <TaskList
-                  tasks={myTasks}
-                  categories={categories}
-                  members={members}
-                  currentMemberId={currentMemberId}
-                  isChild={isChild}
-                  onComplete={(taskId) => handleComplete(taskId, currentMemberId)}
-                  onAssign={handleAssign}
-                  onDelete={deleteTask}
-                />
-              </section>
-
-              <TodaysEfforts
-                currentMemberId={currentMemberId}
-                isChild={isChild}
-                members={members}
-              />
-
-              {otherMembers.map(member => {
-                const memberTasks = tasks.filter(t => t.assigned_to === member.id);
-                return (
-                  <section key={member.id}>
-                    <h2 className="text-lg font-bold mb-2 flex items-center gap-1 text-muted-foreground">
-                      {member.avatar} {member.name}のタスク
-                    </h2>
-                    <TaskList
-                      tasks={memberTasks}
-                      categories={categories}
-                      members={members}
-                      currentMemberId={currentMemberId}
-                      isChild={isChild}
-                      onComplete={(taskId) => handleComplete(taskId, currentMemberId)}
-                      onAssign={handleAssign}
-                      onDelete={deleteTask}
-                    />
-                  </section>
-                );
-              })}
-            </div>
-
+            <TaskBoardDnd
+              tasks={tasks}
+              categories={categories}
+              members={members}
+              currentMemberId={currentMemberId}
+              isChild={isChild}
+              onComplete={(taskId) => handleComplete(taskId, currentMemberId)}
+              onAssign={handleAssign}
+              onDelete={deleteTask}
+              onReorder={reorderTasks}
+              onSendAssignNotification={(taskId, memberId) => sendAssignNotification(taskId, memberId, currentMemberId, currentMember?.name)}
+            />
+            <TodaysEfforts
+              currentMemberId={currentMemberId}
+              isChild={isChild}
+              members={members}
+            />
             <QuickAdd
               categories={categories}
               currentMemberId={currentMemberId}

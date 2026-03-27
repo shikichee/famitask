@@ -28,6 +28,7 @@ export type Task = {
   assigned_to: string | null;
   is_recurring: boolean;
   created_at: string;
+  position: number;
 };
 
 export type Completion = {
