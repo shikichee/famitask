@@ -46,7 +46,7 @@ export default function HistoryPage() {
         <HistoryContent
           currentMemberId={currentMemberId}
           isChild={isChild}
-          completions={completions}
+          completions={isChild ? completions.filter(c => !c.adult_only) : completions}
           memberMap={memberMap}
           deleteCompletion={deleteCompletion}
         />
@@ -114,6 +114,11 @@ function HistoryContent({
                       <p className="text-xs text-muted-foreground">
                         {formatDate(item.completed_at)}
                       </p>
+                      {item.reported_by && (
+                        <p className="text-xs text-muted-foreground">
+                          📣 {memberMap.get(item.reported_by)?.avatar} {isChild ? 'がほうこく' : 'が報告'}
+                        </p>
+                      )}
                       <ThanksButton
                         completionId={item.id}
                         completionMemberId={item.member_id}

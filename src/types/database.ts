@@ -38,6 +38,8 @@ export type Completion = {
   points: number;
   completed_at: string;
   task_id: string | null;
+  reported_by: string | null;
+  adult_only: boolean;
 };
 
 export type PushSubscriptionRecord = {

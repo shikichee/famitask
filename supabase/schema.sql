@@ -45,7 +45,9 @@ create table completions (
   category_emoji text not null,
   member_id uuid not null references family_members(id),
   points integer not null,
-  completed_at timestamptz not null default now()
+  completed_at timestamptz not null default now(),
+  reported_by uuid references family_members(id),
+  adult_only boolean not null default false
 );
 
 -- Indexes
