@@ -11,11 +11,11 @@ function ensureVapidConfigured() {
   if (!publicKey || !privateKey) {
     throw new Error('VAPID keys not configured');
   }
-  webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT || 'mailto:admin@famitask.example.com',
-    publicKey,
-    privateKey,
-  );
+  let subject = process.env.VAPID_SUBJECT || 'mailto:admin@famitask.example.com';
+  if (!subject.startsWith('mailto:') && !subject.startsWith('https://')) {
+    subject = `mailto:${subject}`;
+  }
+  webpush.setVapidDetails(subject, publicKey, privateKey);
   vapidConfigured = true;
 }
 
