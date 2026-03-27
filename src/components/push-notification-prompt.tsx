@@ -13,7 +13,7 @@ export function PushNotificationPrompt({ memberId }: { memberId: string }) {
     return localStorage.getItem(DISMISS_KEY) === 'true';
   });
 
-  if (!isSupported || isSubscribed || permission === 'granted' || dismissed) return null;
+  if (!isSupported || isSubscribed || dismissed) return null;
 
   if (permission === 'denied') {
     return (
