@@ -22,14 +22,15 @@ export function useCompletions() {
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
-    fetchCompletions();
 
     const channel = supabase
       .channel('completions_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'completions' }, () => {
         fetchCompletions();
       })
-      .subscribe();
+      .subscribe(() => {
+        fetchCompletions();
+      });
 
     return () => { supabase.removeChannel(channel); };
   }, [fetchCompletions]);

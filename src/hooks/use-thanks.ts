@@ -19,8 +19,6 @@ export function useThanks(currentMemberId: string) {
   }, []);
 
   useEffect(() => {
-    fetchThanks();
-
     const channel = supabase
       .channel('thanks_changes')
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'thanks' }, (payload: { new: Thanks }) => {
@@ -30,7 +28,9 @@ export function useThanks(currentMemberId: string) {
           setLatestReceivedThanks(newThanks);
         }
       })
-      .subscribe();
+      .subscribe(() => {
+        fetchThanks();
+      });
 
     return () => { supabase.removeChannel(channel); };
   }, [fetchThanks, currentMemberId]);

@@ -13,6 +13,8 @@ export function useCurrentMember() {
     if (isAdmin) {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
+        // Syncing state from external storage (localStorage)
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setOverrideMemberId(stored);
       }
     }
