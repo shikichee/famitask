@@ -125,14 +125,14 @@ function HistoryContent({
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className={isChild ? 'text-lg' : 'text-base'}>{member?.avatar}</span>
-                      <span className="text-sm font-bold text-amber-500">
+                      <span className="text-sm font-bold text-primary">
                         +{item.points}pt
                       </span>
                       {!isChild && (
                         <button
                           type="button"
                           onClick={() => setConfirmTarget(item)}
-                          className="ml-1 p-1 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
+                          className="ml-1 p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-muted transition-colors"
                           aria-label="削除"
                         >
                           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -170,7 +170,7 @@ function HistoryContent({
               <button
                 type="button"
                 onClick={handleDelete}
-                className="flex-1 py-2 rounded-xl bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition-colors disabled:opacity-50"
+                className="flex-1 py-2 rounded-xl bg-destructive text-white text-sm font-medium hover:opacity-90 transition-colors disabled:opacity-50"
                 disabled={deleting}
               >
                 {deleting ? '削除中...' : '削除する'}

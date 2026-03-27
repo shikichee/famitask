@@ -57,7 +57,7 @@ export function WeeklySummary({ members, completions, isChild }: WeeklySummaryPr
               <span>{member.avatar}</span>
               <span className={`font-medium ${isChild ? 'text-base' : 'text-sm'}`}>{member.name}</span>
             </div>
-            <span className={`font-bold ${isChild ? 'text-base' : 'text-sm'}`} style={{ color: member.color }}>
+            <span className={`font-bold ${isChild ? 'text-base' : 'text-sm'}`}>
               {member.total_points}pt
             </span>
           </div>

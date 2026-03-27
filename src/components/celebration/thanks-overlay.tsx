@@ -23,14 +23,14 @@ export function ThanksOverlay({ show, onDone }: ThanksOverlayProps) {
         angle: 60,
         spread: 45,
         origin: { x: 0, y: 0.7 },
-        colors: ['#EC4899', '#F43F5E', '#FB7185', '#FDA4AF'],
+        colors: ['#F29F05', '#F2B199', '#F28705', '#F2F2F2'],
       });
       confetti({
         particleCount: 2,
         angle: 120,
         spread: 45,
         origin: { x: 1, y: 0.7 },
-        colors: ['#EC4899', '#F43F5E', '#FB7185', '#FDA4AF'],
+        colors: ['#F29F05', '#F2B199', '#F28705', '#F2F2F2'],
       });
 
       if (Date.now() < end) {

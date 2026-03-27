@@ -39,7 +39,7 @@ export function TaskCard({ task, category, isChild, members, currentMemberId, on
           {task.title}
         </p>
         <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-xs text-amber-500">{POINTS_STARS[task.points]}</span>
+          <span className="text-xs" style={{ color: '#F29F05' }}>{POINTS_STARS[task.points]}</span>
           {task.is_recurring && (
             <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
               くりかえし
@@ -64,8 +64,8 @@ export function TaskCard({ task, category, isChild, members, currentMemberId, on
             <button
               onClick={() => onAssign(task.id, currentMemberId)}
               className={`
-                rounded-lg bg-blue-500 text-white font-bold
-                transition-all hover:bg-blue-600 active:scale-90
+                rounded-lg bg-primary text-primary-foreground font-bold
+                transition-all hover:opacity-85 active:scale-90
                 ${isChild ? 'px-3 py-2 text-sm' : 'px-2 py-1.5 text-xs'}
               `}
             >
@@ -75,8 +75,8 @@ export function TaskCard({ task, category, isChild, members, currentMemberId, on
               <button
                 onClick={() => setShowDropdown(!showDropdown)}
                 className={`
-                  rounded-lg bg-orange-400 text-white font-bold
-                  transition-all hover:bg-orange-500 active:scale-90
+                  rounded-lg border border-border bg-muted font-bold text-foreground
+                  transition-all hover:bg-accent active:scale-90
                   ${isChild ? 'px-3 py-2 text-sm' : 'px-2 py-1.5 text-xs'}
                 `}
               >
@@ -107,8 +107,8 @@ export function TaskCard({ task, category, isChild, members, currentMemberId, on
           onClick={() => onComplete(task.id)}
           className={`
             shrink-0 flex items-center justify-center rounded-full
-            bg-emerald-500 text-white
-            transition-all hover:bg-emerald-600 active:scale-90
+            bg-primary text-primary-foreground
+            transition-all hover:opacity-85 active:scale-90
             ${isChild ? 'w-12 h-12 text-xl' : 'w-10 h-10 text-lg'}
           `}
           aria-label="完了"
@@ -120,7 +120,7 @@ export function TaskCard({ task, category, isChild, members, currentMemberId, on
           <button
             type="button"
             onClick={() => setShowDeleteConfirm(true)}
-            className="shrink-0 p-1.5 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-50 transition-colors"
+            className="shrink-0 p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-muted transition-colors"
             aria-label="削除"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -157,7 +157,7 @@ export function TaskCard({ task, category, isChild, members, currentMemberId, on
                   onDelete(task.id);
                   setShowDeleteConfirm(false);
                 }}
-                className="flex-1 py-2 rounded-xl bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition-colors"
+                className="flex-1 py-2 rounded-xl bg-destructive text-white text-sm font-medium hover:opacity-90 transition-colors"
               >
                 削除する
               </button>
