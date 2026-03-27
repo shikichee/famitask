@@ -2,25 +2,20 @@
 
 import { FamilyMember } from '@/types/database';
 import { Completion } from '@/types/database';
+import { Period } from '@/lib/period-utils';
 
 interface ContributionChartProps {
   members: FamilyMember[];
   completions: Completion[];
+  period: Period;
   isChild: boolean;
 }
 
-export function ContributionChart({ members, completions, isChild }: ContributionChartProps) {
-  // Calculate this week's points per member
-  const now = new Date();
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - now.getDay());
-  weekStart.setHours(0, 0, 0, 0);
-
+export function ContributionChart({ members, completions, period, isChild }: ContributionChartProps) {
+  // Calculate points per member from pre-filtered completions
   const weeklyPoints = new Map<string, number>();
   completions.forEach((c) => {
-    if (new Date(c.completed_at) >= weekStart) {
-      weeklyPoints.set(c.member_id, (weeklyPoints.get(c.member_id) ?? 0) + c.points);
-    }
+    weeklyPoints.set(c.member_id, (weeklyPoints.get(c.member_id) ?? 0) + c.points);
   });
 
   const maxPoints = Math.max(1, ...weeklyPoints.values());
@@ -38,7 +33,9 @@ export function ContributionChart({ members, completions, isChild }: Contributio
   return (
     <div className="space-y-4">
       <h2 className={`font-bold ${isChild ? 'text-xl' : 'text-lg'}`}>
-        {isChild ? 'こんしゅうのがんばり' : '今週の貢献'}
+        {period === 'week'
+          ? (isChild ? 'こんしゅうのがんばり' : '今週の貢献')
+          : (isChild ? 'こんげつのがんばり' : '今月の貢献')}
       </h2>
 
       <div className="space-y-3">
