@@ -11,7 +11,7 @@ import { useFamilyMembers } from '@/hooks/use-family-members';
 import { PushNotificationPrompt } from '@/components/push-notification-prompt';
 
 export default function BoardPage() {
-  const { tasks, addTask, completeTask, assignTask, deleteTask, reorderTasks } = useTasks();
+  const { tasks, addTask, completeTask, assignTask, deleteTask, reorderTasks, sendAssignNotification } = useTasks();
   const categories = useCategories();
   const members = useFamilyMembers();
 
@@ -65,6 +65,7 @@ export default function BoardPage() {
               onAssign={handleAssign}
               onDelete={deleteTask}
               onReorder={reorderTasks}
+              onSendAssignNotification={(taskId, memberId) => sendAssignNotification(taskId, memberId, currentMemberId, currentMember?.name)}
             />
             <TodaysEfforts
               currentMemberId={currentMemberId}

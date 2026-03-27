@@ -8,10 +8,9 @@ import {
   TouchSensor,
   useSensor,
   useSensors,
-  closestCenter,
+  closestCorners,
   DragStartEvent,
   DragEndEvent,
-  DragOverEvent,
 } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
 import { Task, TaskCategory, FamilyMember } from '@/types/database';
@@ -37,6 +36,7 @@ interface TaskBoardDndProps {
   onAssign: (taskId: string, memberId: string) => void;
   onDelete: (taskId: string) => void;
   onReorder: (updates: { id: string; position: number; assigned_to: string | null }[]) => void;
+  onSendAssignNotification: (taskId: string, memberId: string) => void;
 }
 
 export function TaskBoardDnd({
@@ -49,6 +49,7 @@ export function TaskBoardDnd({
   onAssign,
   onDelete,
   onReorder,
+  onSendAssignNotification,
 }: TaskBoardDndProps) {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
@@ -90,10 +91,6 @@ export function TaskBoardDnd({
     const task = tasks.find(t => t.id === event.active.id);
     if (task) setActiveTask(task);
   }, [tasks]);
-
-  const handleDragOver = useCallback((_event: DragOverEvent) => {
-    // Visual feedback is handled by dnd-kit internally
-  }, []);
 
   const handleDragEnd = useCallback((event: DragEndEvent) => {
     setActiveTask(null);
@@ -175,24 +172,21 @@ export function TaskBoardDnd({
       ];
       onReorder(updates);
 
-      // Trigger notification for cross-group assignment change
+      // Send notification for cross-group assignment change (DB update already handled by onReorder)
       const sourceMemberId = memberIdFromGroupId(sourceGroup);
       if (destMemberId !== null && destMemberId !== currentMemberId) {
-        // Moving to someone else's group - "おねがい" notification
-        onAssign(activeId, destMemberId);
+        onSendAssignNotification(activeId, destMemberId);
       } else if (destMemberId === currentMemberId && sourceMemberId === null) {
-        // Moving from unassigned to myself - "やる!" (self-assign)
-        onAssign(activeId, currentMemberId);
+        onSendAssignNotification(activeId, currentMemberId);
       }
     }
-  }, [tasks, findGroupForTask, getTasksForGroup, onReorder, onAssign, currentMemberId]);
+  }, [tasks, findGroupForTask, getTasksForGroup, onReorder, onSendAssignNotification, currentMemberId]);
 
   return (
     <DndContext
       sensors={sensors}
-      collisionDetection={closestCenter}
+      collisionDetection={closestCorners}
       onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
       <div className="flex flex-col gap-6 pb-24">

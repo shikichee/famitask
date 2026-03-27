@@ -267,6 +267,9 @@ export function useTasks() {
   }, []);
 
   const reorderTasks = useCallback(async (reorderedTasks: { id: string; position: number; assigned_to: string | null }[]) => {
+    // Capture for rollback
+    const prevTasks = [...tasks];
+
     // Optimistic update
     setTasks(prev => {
       const updates = new Map(reorderedTasks.map(t => [t.id, t]));
@@ -280,14 +283,47 @@ export function useTasks() {
     });
 
     // Batch update to Supabase
-    const promises = reorderedTasks.map(t =>
-      supabase
-        .from('tasks')
-        .update({ position: t.position, assigned_to: t.assigned_to })
-        .eq('id', t.id)
-    );
-    await Promise.all(promises);
-  }, []);
+    try {
+      const promises = reorderedTasks.map(t =>
+        supabase
+          .from('tasks')
+          .update({ position: t.position, assigned_to: t.assigned_to })
+          .eq('id', t.id)
+      );
+      await Promise.all(promises);
+    } catch {
+      setTasks(prevTasks);
+    }
+  }, [tasks]);
 
-  return { tasks, addTask, completeTask, assignTask, deleteTask, reorderTasks, refetch: fetchTasks };
+  const sendAssignNotification = useCallback(async (taskId: string, memberId: string, currentMemberId?: string, currentMemberName?: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    const isSelfAssign = memberId === currentMemberId;
+
+    if (isSelfAssign) {
+      fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          exclude_member_id: memberId,
+          title: 'タスクを引き受けました',
+          body: `${currentMemberName ?? 'メンバー'}が「${task?.title ?? 'タスク'}」をやると言いました`,
+          url: '/',
+        }),
+      }).catch(() => {});
+    } else {
+      fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          member_ids: [memberId],
+          title: 'タスクがおねがいされました',
+          body: `${currentMemberName ?? 'メンバー'}から「${task?.title ?? 'タスク'}」をおねがいされました`,
+          url: '/',
+        }),
+      }).catch(() => {});
+    }
+  }, [tasks]);
+
+  return { tasks, addTask, completeTask, assignTask, deleteTask, reorderTasks, sendAssignNotification, refetch: fetchTasks };
 }
