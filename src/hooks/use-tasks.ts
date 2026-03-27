@@ -131,9 +131,16 @@ export function useTasks() {
           exclude_member_id: task.created_by,
           title: '新しいタスク',
           body: `${creatorName ?? 'メンバー'}が「${data.title}」を追加しました`,
-          url: '/',
+          url: '/history',
         }),
       }).catch(() => {});
+
+      // Log activity
+      supabase.from('activity_logs').insert({
+        event_type: 'task_created',
+        actor_id: task.created_by,
+        task_title: data.title,
+      }).then(() => {}, () => {});
     }
     return data;
   }, []);
@@ -193,9 +200,18 @@ export function useTasks() {
         exclude_member_id: memberId,
         title: 'タスク完了！',
         body: `${memberName ?? 'メンバー'}が「${task.title}」を完了しました 🎉`,
-        url: '/',
+        url: '/history',
       }),
     }).catch(() => {});
+
+    // Log activity
+    supabase.from('activity_logs').insert({
+      event_type: 'task_completed',
+      actor_id: memberId,
+      task_title: task.title,
+      category_emoji: categoryEmoji,
+      points: task.points,
+    }).then(() => {}, () => {});
 
     return { task_title: task.title, points: task.points };
   }, [tasks]);
@@ -226,9 +242,16 @@ export function useTasks() {
           exclude_member_id: memberId,
           title: 'タスクを引き受けました',
           body: `${currentMemberName ?? 'メンバー'}が「${task?.title ?? 'タスク'}」をやると言いました`,
-          url: '/',
+          url: '/history',
         }),
       }).catch(() => {});
+
+      // Log activity
+      supabase.from('activity_logs').insert({
+        event_type: 'task_self_assigned',
+        actor_id: memberId,
+        task_title: task?.title ?? 'タスク',
+      }).then(() => {}, () => {});
     } else {
       // Request assign ("おねがい"): notify the assigned member
       fetch('/api/push/send', {
@@ -238,9 +261,17 @@ export function useTasks() {
           member_ids: [memberId],
           title: 'タスクがおねがいされました',
           body: `${currentMemberName ?? 'メンバー'}から「${task?.title ?? 'タスク'}」をおねがいされました`,
-          url: '/',
+          url: '/history',
         }),
       }).catch(() => {});
+
+      // Log activity
+      supabase.from('activity_logs').insert({
+        event_type: 'task_request_assigned',
+        actor_id: currentMemberId!,
+        target_member_id: memberId,
+        task_title: task?.title ?? 'タスク',
+      }).then(() => {}, () => {});
     }
   }, [tasks]);
 
