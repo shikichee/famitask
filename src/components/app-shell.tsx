@@ -11,7 +11,7 @@ interface AppShellProps {
 }
 
 export function AppShell({ children }: AppShellProps) {
-  const { currentMemberId, switchMember, isChild, isAdmin, authLoading } = useCurrentMember();
+  const { currentMemberId, isChild, authLoading } = useCurrentMember();
   const { member, signOut } = useAuthContext();
 
   if (authLoading) {

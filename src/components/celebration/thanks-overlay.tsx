@@ -44,6 +44,8 @@ export function ThanksOverlay({ show, onDone }: ThanksOverlayProps) {
   useEffect(() => {
     if (show) {
       const msg = THANKS_MESSAGES[Math.floor(Math.random() * THANKS_MESSAGES.length)];
+      // Responding to show prop change — intentional synchronous update
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setMessage(msg);
       setVisible(true);
       fireConfetti();

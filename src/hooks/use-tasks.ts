@@ -33,7 +33,7 @@ export function useCategories() {
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
-    supabase.from('task_categories').select('*').then(({ data }) => {
+    supabase.from('task_categories').select('*').then(({ data }: { data: TaskCategory[] | null }) => {
       if (data) setCategories(data);
     });
   }, []);
@@ -46,7 +46,7 @@ export function useTasks() {
 
   const fetchTasks = useCallback(async () => {
     if (!isSupabaseConfigured) return;
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('tasks')
       .select('*')
       .eq('status', 'pending')
@@ -56,14 +56,15 @@ export function useTasks() {
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
-    fetchTasks();
 
     const channel = supabase
       .channel('tasks_changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
         fetchTasks();
       })
-      .subscribe();
+      .subscribe(() => {
+        fetchTasks();
+      });
 
     return () => { supabase.removeChannel(channel); };
   }, [fetchTasks]);
