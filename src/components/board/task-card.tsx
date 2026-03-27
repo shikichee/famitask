@@ -64,7 +64,7 @@ export function TaskCard({ task, category, isChild, members, currentMemberId, on
             <button
               onClick={() => onAssign(task.id, currentMemberId)}
               className={`
-                rounded-lg bg-primary text-primary-foreground font-bold
+                rounded-lg bg-[#F28705] text-white font-bold
                 transition-all hover:opacity-85 active:scale-90
                 ${isChild ? 'px-3 py-2 text-sm' : 'px-2 py-1.5 text-xs'}
               `}
@@ -75,8 +75,8 @@ export function TaskCard({ task, category, isChild, members, currentMemberId, on
               <button
                 onClick={() => setShowDropdown(!showDropdown)}
                 className={`
-                  rounded-lg border border-border bg-muted font-bold text-foreground
-                  transition-all hover:bg-accent active:scale-90
+                  rounded-lg bg-accent font-bold text-accent-foreground
+                  transition-all hover:opacity-85 active:scale-90
                   ${isChild ? 'px-3 py-2 text-sm' : 'px-2 py-1.5 text-xs'}
                 `}
               >
@@ -107,7 +107,7 @@ export function TaskCard({ task, category, isChild, members, currentMemberId, on
           onClick={() => onComplete(task.id)}
           className={`
             shrink-0 flex items-center justify-center rounded-full
-            bg-primary text-primary-foreground
+            bg-[#F29F05] text-white
             transition-all hover:opacity-85 active:scale-90
             ${isChild ? 'w-12 h-12 text-xl' : 'w-10 h-10 text-lg'}
           `}

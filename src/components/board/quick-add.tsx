@@ -68,7 +68,7 @@ export function QuickAdd({ categories, currentMemberId, isChild, onAdd }: QuickA
         className={`
           fixed bottom-20 right-4 z-30
           flex items-center justify-center
-          rounded-full bg-primary text-primary-foreground shadow-lg
+          rounded-full bg-[#F25C05] text-white shadow-lg
           transition-all hover:opacity-85 active:scale-90
           ${isChild ? 'w-16 h-16 text-3xl' : 'w-14 h-14 text-2xl'}
         `}

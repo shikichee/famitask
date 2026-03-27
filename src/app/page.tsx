@@ -5,7 +5,6 @@ import { AppShell } from '@/components/app-shell';
 import { TaskList } from '@/components/board/task-list';
 import { QuickAdd } from '@/components/board/quick-add';
 import { CelebrationOverlay } from '@/components/celebration/celebration-overlay';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useTasks, useCategories } from '@/hooks/use-tasks';
 import { useFamilyMembers } from '@/hooks/use-family-members';
 
@@ -49,23 +48,17 @@ export default function BoardPage() {
     <AppShell>
       {({ currentMemberId, isChild }) => {
         const unassignedTasks = tasks.filter(t => !t.assigned_to);
+        const myTasks = tasks.filter(t => t.assigned_to === currentMemberId);
+        const otherMembers = members.filter(m => m.id !== currentMemberId);
+        const currentMember = members.find(m => m.id === currentMemberId);
 
         return (
           <>
-            <Tabs defaultValue="everyone">
-              <TabsList className="w-full overflow-x-auto">
-                <TabsTrigger value="everyone">
-                  みんなの
-                </TabsTrigger>
-                {members.map(member => (
-                  <TabsTrigger key={member.id} value={member.id}>
-                    <span>{member.avatar}</span>
-                    <span className="ml-1">{member.name}</span>
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-
-              <TabsContent value="everyone">
+            <div className="flex flex-col gap-6 pb-24">
+              <section>
+                <h2 className="text-lg font-bold mb-2 flex items-center gap-1">
+                  📋 {isChild ? 'みんなのおしごと' : 'みんなのタスク'}
+                </h2>
                 <TaskList
                   tasks={unassignedTasks}
                   categories={categories}
@@ -76,23 +69,45 @@ export default function BoardPage() {
                   onAssign={handleAssign}
                   onDelete={deleteTask}
                 />
-              </TabsContent>
+              </section>
 
-              {members.map(member => (
-                <TabsContent key={member.id} value={member.id}>
-                  <TaskList
-                    tasks={tasks.filter(t => t.assigned_to === member.id)}
-                    categories={categories}
-                    members={members}
-                    currentMemberId={currentMemberId}
-                    isChild={isChild}
-                    onComplete={(taskId) => handleComplete(taskId, currentMemberId)}
-                    onAssign={handleAssign}
-                    onDelete={deleteTask}
-                  />
-                </TabsContent>
-              ))}
-            </Tabs>
+              <section>
+                <h2 className="text-lg font-bold mb-2 flex items-center gap-1">
+                  {currentMember?.avatar ?? '👤'} {isChild ? 'じぶんのおしごと' : 'じぶんのタスク'}
+                </h2>
+                <TaskList
+                  tasks={myTasks}
+                  categories={categories}
+                  members={members}
+                  currentMemberId={currentMemberId}
+                  isChild={isChild}
+                  onComplete={(taskId) => handleComplete(taskId, currentMemberId)}
+                  onAssign={handleAssign}
+                  onDelete={deleteTask}
+                />
+              </section>
+
+              {otherMembers.map(member => {
+                const memberTasks = tasks.filter(t => t.assigned_to === member.id);
+                return (
+                  <section key={member.id}>
+                    <h2 className="text-lg font-bold mb-2 flex items-center gap-1 text-muted-foreground">
+                      {member.avatar} {member.name}のタスク
+                    </h2>
+                    <TaskList
+                      tasks={memberTasks}
+                      categories={categories}
+                      members={members}
+                      currentMemberId={currentMemberId}
+                      isChild={isChild}
+                      onComplete={(taskId) => handleComplete(taskId, currentMemberId)}
+                      onAssign={handleAssign}
+                      onDelete={deleteTask}
+                    />
+                  </section>
+                );
+              })}
+            </div>
 
             <QuickAdd
               categories={categories}
