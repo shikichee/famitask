@@ -46,7 +46,9 @@ create table completions (
   category_emoji text not null,
   member_id uuid not null references family_members(id),
   points integer not null,
-  completed_at timestamptz not null default now()
+  completed_at timestamptz not null default now(),
+  reported_by uuid references family_members(id),
+  adult_only boolean not null default false
 );
 
 -- Indexes
@@ -109,7 +111,7 @@ create policy "Authenticated users can delete push_subscriptions"
 -- Activity logs (all push-notification-worthy events)
 create table activity_logs (
   id uuid primary key default gen_random_uuid(),
-  event_type text not null check (event_type in ('task_created', 'task_completed', 'task_self_assigned', 'task_request_assigned')),
+  event_type text not null check (event_type in ('task_created', 'task_completed', 'task_self_assigned', 'task_request_assigned', 'effort_reported')),
   actor_id uuid not null references family_members(id),
   target_member_id uuid references family_members(id),
   task_title text not null,

@@ -5,15 +5,17 @@ import { AppShell } from '@/components/app-shell';
 import { TaskBoardDnd } from '@/components/board/task-board-dnd';
 import { QuickAdd } from '@/components/board/quick-add';
 import { CelebrationOverlay } from '@/components/celebration/celebration-overlay';
-import { TodaysEfforts } from '@/components/board/todays-efforts';
+import { ReportEffort } from '@/components/board/report-effort';
 import { useTasks, useCategories } from '@/hooks/use-tasks';
 import { useFamilyMembers } from '@/hooks/use-family-members';
+import { useReportEffort } from '@/hooks/use-report-effort';
 import { PushNotificationPrompt } from '@/components/push-notification-prompt';
 
 export default function BoardPage() {
   const { tasks, addTask, completeTask, assignTask, deleteTask, reorderTasks, sendAssignNotification } = useTasks();
   const categories = useCategories();
   const members = useFamilyMembers();
+  const { reportEffort } = useReportEffort();
 
   const [celebration, setCelebration] = useState<{
     show: boolean;
@@ -67,10 +69,15 @@ export default function BoardPage() {
               onReorder={reorderTasks}
               onSendAssignNotification={(taskId, memberId) => sendAssignNotification(taskId, memberId, currentMemberId, currentMember?.name)}
             />
-            <TodaysEfforts
+            <ReportEffort
+              categories={categories}
+              members={members}
               currentMemberId={currentMemberId}
               isChild={isChild}
-              members={members}
+              onReport={async (targetMemberId, taskTitle, categoryEmoji, targetName, adultOnly) => {
+                await reportEffort(currentMemberId, targetMemberId, taskTitle, categoryEmoji, currentMember?.name, adultOnly);
+                setCelebration({ show: true, points: 1, memberName: targetName });
+              }}
             />
             <QuickAdd
               categories={categories}

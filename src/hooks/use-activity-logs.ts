@@ -19,25 +19,16 @@ export function useActivityLogs() {
   }, []);
 
   useEffect(() => {
-    // Delay subscribe to avoid auth token lock contention with other hooks
-    const timer = setTimeout(() => {
-      const ch = supabase
-        .channel('activity_logs_changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_logs' }, () => {
-          fetchActivityLogs();
-        })
-        .subscribe(() => {
-          fetchActivityLogs();
-        });
-      channelRef = ch;
-    }, 100);
+    const channel = supabase
+      .channel('activity_logs_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activity_logs' }, () => {
+        fetchActivityLogs();
+      })
+      .subscribe(() => {
+        fetchActivityLogs();
+      });
 
-    let channelRef: ReturnType<typeof supabase.channel> | null = null;
-
-    return () => {
-      clearTimeout(timer);
-      if (channelRef) supabase.removeChannel(channelRef);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [fetchActivityLogs]);
 
   const deleteActivityLog = useCallback(async (id: string) => {

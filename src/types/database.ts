@@ -39,6 +39,8 @@ export type Completion = {
   points: number;
   completed_at: string;
   task_id: string | null;
+  reported_by: string | null;
+  adult_only: boolean;
 };
 
 export type PushSubscriptionRecord = {
@@ -60,7 +62,7 @@ export type Thanks = {
 
 export type ActivityLog = {
   id: string;
-  event_type: 'task_created' | 'task_completed' | 'task_self_assigned' | 'task_request_assigned';
+  event_type: 'task_created' | 'task_completed' | 'task_self_assigned' | 'task_request_assigned' | 'effort_reported';
   actor_id: string;
   target_member_id: string | null;
   task_title: string;

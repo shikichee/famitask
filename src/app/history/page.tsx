@@ -60,6 +60,10 @@ const EVENT_CONFIG: Record<ActivityLog['event_type'], { icon: string; label: (ac
     icon: '🙏',
     label: (actor, target, title) => `${actor}が${target}に「${title}」をおねがいしました`,
   },
+  effort_reported: {
+    icon: '📣',
+    label: (actor, target, title) => `${actor}が${target}のがんばりを報告：「${title}」`,
+  },
 };
 
 export default function HistoryPage() {
@@ -74,7 +78,7 @@ export default function HistoryPage() {
         <HistoryContent
           currentMemberId={currentMemberId}
           isChild={isChild}
-          completions={completions}
+          completions={isChild ? completions.filter(c => !c.adult_only) : completions}
           activityLogs={activityLogs}
           memberMap={memberMap}
           deleteCompletion={deleteCompletion}
@@ -249,7 +253,7 @@ function ActivityFeed({
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className={isChild ? 'text-lg' : 'text-base'}>{actor?.avatar}</span>
-                    {item.event_type === 'task_completed' && item.points != null && (
+                    {(item.event_type === 'task_completed' || item.event_type === 'effort_reported') && item.points != null && (
                       <span className="text-sm font-bold text-primary">
                         +{item.points}pt
                       </span>
@@ -328,6 +332,11 @@ function CompletionsList({
                     <p className="text-xs text-muted-foreground">
                       {formatDate(item.completed_at)}
                     </p>
+                    {item.reported_by && (
+                      <p className="text-xs text-muted-foreground">
+                        📣 {memberMap.get(item.reported_by)?.avatar} {isChild ? 'がほうこく' : 'が報告'}
+                      </p>
+                    )}
                     <ThanksButton
                       completionId={item.id}
                       completionMemberId={item.member_id}
