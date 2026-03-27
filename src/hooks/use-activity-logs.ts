@@ -40,5 +40,13 @@ export function useActivityLogs() {
     };
   }, [fetchActivityLogs]);
 
-  return { activityLogs, refetch: fetchActivityLogs };
+  const deleteActivityLog = useCallback(async (id: string) => {
+    await supabase
+      .from('activity_logs')
+      .delete()
+      .eq('id', id);
+    setActivityLogs(prev => prev.filter(a => a.id !== id));
+  }, []);
+
+  return { activityLogs, refetch: fetchActivityLogs, deleteActivityLog };
 }

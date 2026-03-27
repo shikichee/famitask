@@ -65,7 +65,7 @@ const EVENT_CONFIG: Record<ActivityLog['event_type'], { icon: string; label: (ac
 export default function HistoryPage() {
   const members = useFamilyMembers();
   const { completions, deleteCompletion } = useCompletions();
-  const { activityLogs } = useActivityLogs();
+  const { activityLogs, deleteActivityLog } = useActivityLogs();
   const memberMap = new Map<string, FamilyMember>(members.map(m => [m.id, m]));
 
   return (
@@ -78,6 +78,7 @@ export default function HistoryPage() {
           activityLogs={activityLogs}
           memberMap={memberMap}
           deleteCompletion={deleteCompletion}
+          deleteActivityLog={deleteActivityLog}
         />
       )}
     </AppShell>
@@ -91,6 +92,7 @@ function HistoryContent({
   activityLogs,
   memberMap,
   deleteCompletion,
+  deleteActivityLog,
 }: {
   currentMemberId: string;
   isChild: boolean;
@@ -98,6 +100,7 @@ function HistoryContent({
   activityLogs: ActivityLog[];
   memberMap: Map<string, FamilyMember>;
   deleteCompletion: (completion: Completion) => Promise<void>;
+  deleteActivityLog: (id: string) => Promise<void>;
 }) {
   const { thanksList, sendThanks, latestReceivedThanks, clearReceivedThanks } = useThanks(currentMemberId);
   const [confirmTarget, setConfirmTarget] = useState<Completion | null>(null);
@@ -132,6 +135,7 @@ function HistoryContent({
             activityLogs={activityLogs}
             memberMap={memberMap}
             isChild={isChild}
+            deleteActivityLog={deleteActivityLog}
           />
         </TabsContent>
 
@@ -191,10 +195,12 @@ function ActivityFeed({
   activityLogs,
   memberMap,
   isChild,
+  deleteActivityLog,
 }: {
   activityLogs: ActivityLog[];
   memberMap: Map<string, FamilyMember>;
   isChild: boolean;
+  deleteActivityLog: (id: string) => Promise<void>;
 }) {
   if (activityLogs.length === 0) {
     return (
@@ -247,6 +253,18 @@ function ActivityFeed({
                       <span className="text-sm font-bold text-primary">
                         +{item.points}pt
                       </span>
+                    )}
+                    {!isChild && (
+                      <button
+                        type="button"
+                        onClick={() => deleteActivityLog(item.id)}
+                        className="ml-1 p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-muted transition-colors"
+                        aria-label="削除"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                        </svg>
+                      </button>
                     )}
                   </div>
                 </div>

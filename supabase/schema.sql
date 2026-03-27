@@ -126,6 +126,9 @@ create policy "Authenticated users can read activity_logs"
 create policy "Authenticated users can insert activity_logs"
   on activity_logs for insert to authenticated with check (true);
 
+create policy "Authenticated users can delete activity_logs"
+  on activity_logs for delete to authenticated using (true);
+
 -- Enable Realtime
 alter publication supabase_realtime add table tasks;
 alter publication supabase_realtime add table completions;
