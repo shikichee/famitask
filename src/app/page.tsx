@@ -12,7 +12,7 @@ import { useReportEffort } from '@/hooks/use-report-effort';
 import { PushNotificationPrompt } from '@/components/push-notification-prompt';
 
 export default function BoardPage() {
-  const { tasks, addTask, completeTask, assignTask, deleteTask, reorderTasks, sendAssignNotification } = useTasks();
+  const { tasks, addTask, completeTask, assignTask, deleteTask, reorderTasks, sendAssignNotification, refetch } = useTasks();
   const categories = useCategories();
   const members = useFamilyMembers();
   const { reportEffort } = useReportEffort();
@@ -42,7 +42,7 @@ export default function BoardPage() {
   );
 
   return (
-    <AppShell>
+    <AppShell onRefresh={refetch}>
       {({ currentMemberId, isChild }) => {
         const currentMember = members.find(m => m.id === currentMemberId);
 
