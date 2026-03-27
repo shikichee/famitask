@@ -1,8 +1,23 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+## セットアップ
 
-First, run the development server:
+### 環境変数
+
+`.env.example` をコピーして `.env.local` を作成し、値を設定してください。
+
+```bash
+cp .env.example .env.local
+```
+
+| 変数名 | 説明 |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | SupabaseプロジェクトのURL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabaseの匿名キー |
+
+Supabaseダッシュボードの **Settings > API** から取得できます。
+
+### 開発サーバーの起動
 
 ```bash
 npm run dev

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Task, TaskCategory, FamilyMember } from '@/types/database';
 import { Badge } from '@/components/ui/badge';
 
@@ -129,9 +130,15 @@ export function TaskCard({ task, category, isChild, members, currentMemberId, on
         )}
       </div>
 
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-card rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl space-y-4">
+      {showDeleteConfirm && createPortal(
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setShowDeleteConfirm(false)}
+        >
+          <div
+            className="bg-card rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <p className="font-bold text-base">タスクを削除しますか？</p>
             <p className="text-sm text-muted-foreground">
               「{task.title}」を削除します。この操作は元に戻せません。
@@ -156,7 +163,8 @@ export function TaskCard({ task, category, isChild, members, currentMemberId, on
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

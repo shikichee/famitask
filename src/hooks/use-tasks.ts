@@ -174,10 +174,14 @@ export function useTasks() {
       return;
     }
 
-    await supabase
+    const { error } = await supabase
       .from('tasks')
       .delete()
       .eq('id', taskId);
+
+    if (!error) {
+      setTasks(prev => prev.filter(t => t.id !== taskId));
+    }
   }, []);
 
   return { tasks, addTask, completeTask, assignTask, deleteTask, refetch: fetchTasks };
