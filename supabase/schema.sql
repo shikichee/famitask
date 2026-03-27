@@ -35,7 +35,8 @@ create table tasks (
   completed_at timestamptz,
   assigned_to uuid references family_members(id),
   is_recurring boolean not null default false,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  position integer not null default 0
 );
 
 -- Completions (history log, never deleted)
@@ -56,6 +57,7 @@ create index idx_tasks_category on tasks(category_id);
 create index idx_completions_member on completions(member_id);
 create index idx_completions_completed_at on completions(completed_at);
 create index idx_tasks_assigned_to on tasks(assigned_to);
+create index idx_tasks_position on tasks(assigned_to, position);
 
 -- RPC: increment points atomically
 create or replace function increment_points(member_id uuid, amount integer)
@@ -106,8 +108,34 @@ create policy "Authenticated users can insert push_subscriptions"
 create policy "Authenticated users can delete push_subscriptions"
   on push_subscriptions for delete to authenticated using (true);
 
+-- Activity logs (all push-notification-worthy events)
+create table activity_logs (
+  id uuid primary key default gen_random_uuid(),
+  event_type text not null check (event_type in ('task_created', 'task_completed', 'task_self_assigned', 'task_request_assigned', 'effort_reported')),
+  actor_id uuid not null references family_members(id),
+  target_member_id uuid references family_members(id),
+  task_title text not null,
+  category_emoji text not null default '',
+  points integer,
+  created_at timestamptz not null default now()
+);
+
+create index idx_activity_logs_created_at on activity_logs(created_at desc);
+
+alter table activity_logs enable row level security;
+
+create policy "Authenticated users can read activity_logs"
+  on activity_logs for select to authenticated using (true);
+
+create policy "Authenticated users can insert activity_logs"
+  on activity_logs for insert to authenticated with check (true);
+
+create policy "Authenticated users can delete activity_logs"
+  on activity_logs for delete to authenticated using (true);
+
 -- Enable Realtime
 alter publication supabase_realtime add table tasks;
 alter publication supabase_realtime add table completions;
 alter publication supabase_realtime add table family_members;
 alter publication supabase_realtime add table thanks;
+alter publication supabase_realtime add table activity_logs;

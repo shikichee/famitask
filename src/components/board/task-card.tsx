@@ -58,7 +58,11 @@ export function TaskCard({ task, category, isChild, members, currentMemberId, on
         </div>
       </div>
 
-      <div className="flex items-center gap-1.5 shrink-0">
+      <div
+        className="flex items-center gap-1.5 shrink-0"
+        onPointerDown={(e) => e.stopPropagation()}
+        onTouchStart={(e) => e.stopPropagation()}
+      >
         {!task.assigned_to && (
           <>
             <button

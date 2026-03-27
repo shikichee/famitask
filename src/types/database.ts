@@ -28,6 +28,7 @@ export type Task = {
   assigned_to: string | null;
   is_recurring: boolean;
   created_at: string;
+  position: number;
 };
 
 export type Completion = {
@@ -56,5 +57,16 @@ export type Thanks = {
   completion_id: string;
   from_member_id: string;
   to_member_id: string;
+  created_at: string;
+};
+
+export type ActivityLog = {
+  id: string;
+  event_type: 'task_created' | 'task_completed' | 'task_self_assigned' | 'task_request_assigned' | 'effort_reported';
+  actor_id: string;
+  target_member_id: string | null;
+  task_title: string;
+  category_emoji: string;
+  points: number | null;
   created_at: string;
 };

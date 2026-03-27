@@ -19,13 +19,13 @@ const DEMO_CATEGORIES: TaskCategory[] = [
 ];
 
 const DEMO_TASKS: Task[] = [
-  { id: '1', title: '食器洗い', category_id: 'b0000000-0000-0000-0000-000000000003', status: 'pending', adult_only: false, points: 2, created_by: 'a0000000-0000-0000-0000-000000000001', completed_by: null, completed_at: null, assigned_to: null, is_recurring: true, created_at: new Date().toISOString() },
-  { id: '2', title: '洗濯物たたむ', category_id: 'b0000000-0000-0000-0000-000000000002', status: 'pending', adult_only: false, points: 2, created_by: 'a0000000-0000-0000-0000-000000000001', completed_by: null, completed_at: null, assigned_to: null, is_recurring: true, created_at: new Date().toISOString() },
-  { id: '3', title: 'お風呂掃除', category_id: 'b0000000-0000-0000-0000-000000000001', status: 'pending', adult_only: false, points: 3, created_by: 'a0000000-0000-0000-0000-000000000002', completed_by: null, completed_at: null, assigned_to: null, is_recurring: true, created_at: new Date().toISOString() },
-  { id: '4', title: 'ゴミ出し', category_id: 'b0000000-0000-0000-0000-000000000001', status: 'pending', adult_only: false, points: 1, created_by: 'a0000000-0000-0000-0000-000000000002', completed_by: null, completed_at: null, assigned_to: null, is_recurring: true, created_at: new Date().toISOString() },
-  { id: '5', title: '習い事の準備', category_id: 'b0000000-0000-0000-0000-000000000005', status: 'pending', adult_only: false, points: 2, created_by: 'a0000000-0000-0000-0000-000000000001', completed_by: null, completed_at: null, assigned_to: null, is_recurring: false, created_at: new Date().toISOString() },
-  { id: '6', title: '病院予約', category_id: 'b0000000-0000-0000-0000-000000000007', status: 'pending', adult_only: true, points: 2, created_by: 'a0000000-0000-0000-0000-000000000001', completed_by: null, completed_at: null, assigned_to: null, is_recurring: false, created_at: new Date().toISOString() },
-  { id: '7', title: '保険の書類提出', category_id: 'b0000000-0000-0000-0000-000000000007', status: 'pending', adult_only: true, points: 3, created_by: 'a0000000-0000-0000-0000-000000000002', completed_by: null, completed_at: null, assigned_to: null, is_recurring: false, created_at: new Date().toISOString() },
+  { id: '1', title: '食器洗い', category_id: 'b0000000-0000-0000-0000-000000000003', status: 'pending', adult_only: false, points: 2, created_by: 'a0000000-0000-0000-0000-000000000001', completed_by: null, completed_at: null, assigned_to: null, is_recurring: true, created_at: new Date().toISOString(), position: 0 },
+  { id: '2', title: '洗濯物たたむ', category_id: 'b0000000-0000-0000-0000-000000000002', status: 'pending', adult_only: false, points: 2, created_by: 'a0000000-0000-0000-0000-000000000001', completed_by: null, completed_at: null, assigned_to: null, is_recurring: true, created_at: new Date().toISOString(), position: 1 },
+  { id: '3', title: 'お風呂掃除', category_id: 'b0000000-0000-0000-0000-000000000001', status: 'pending', adult_only: false, points: 3, created_by: 'a0000000-0000-0000-0000-000000000002', completed_by: null, completed_at: null, assigned_to: null, is_recurring: true, created_at: new Date().toISOString(), position: 2 },
+  { id: '4', title: 'ゴミ出し', category_id: 'b0000000-0000-0000-0000-000000000001', status: 'pending', adult_only: false, points: 1, created_by: 'a0000000-0000-0000-0000-000000000002', completed_by: null, completed_at: null, assigned_to: null, is_recurring: true, created_at: new Date().toISOString(), position: 3 },
+  { id: '5', title: '習い事の準備', category_id: 'b0000000-0000-0000-0000-000000000005', status: 'pending', adult_only: false, points: 2, created_by: 'a0000000-0000-0000-0000-000000000001', completed_by: null, completed_at: null, assigned_to: null, is_recurring: false, created_at: new Date().toISOString(), position: 4 },
+  { id: '6', title: '病院予約', category_id: 'b0000000-0000-0000-0000-000000000007', status: 'pending', adult_only: true, points: 2, created_by: 'a0000000-0000-0000-0000-000000000001', completed_by: null, completed_at: null, assigned_to: null, is_recurring: false, created_at: new Date().toISOString(), position: 5 },
+  { id: '7', title: '保険の書類提出', category_id: 'b0000000-0000-0000-0000-000000000007', status: 'pending', adult_only: true, points: 3, created_by: 'a0000000-0000-0000-0000-000000000002', completed_by: null, completed_at: null, assigned_to: null, is_recurring: false, created_at: new Date().toISOString(), position: 6 },
 ];
 
 export function useCategories() {
@@ -50,7 +50,7 @@ export function useTasks() {
       .from('tasks')
       .select('*')
       .eq('status', 'pending')
-      .order('created_at', { ascending: false });
+      .order('position', { ascending: true });
     if (data) setTasks(data);
   }, []);
 
@@ -107,14 +107,20 @@ export function useTasks() {
         completed_at: null,
         assigned_to: null,
         created_at: new Date().toISOString(),
+        position: 0,
       };
-      setTasks(prev => [newTask, ...prev]);
+      setTasks(prev => [newTask, ...prev.map(t => ({ ...t, position: t.position + 1 }))]);
       return newTask;
     }
 
+    // Increment position of all unassigned pending tasks (new task goes to unassigned group)
+    await supabase.rpc('increment_positions', {
+      p_assigned_to: null,
+    });
+
     const { data, error } = await supabase
       .from('tasks')
-      .insert({ ...task, status: 'pending' })
+      .insert({ ...task, status: 'pending', position: 0 })
       .select()
       .single();
     if (error) {
@@ -131,9 +137,16 @@ export function useTasks() {
           exclude_member_id: task.created_by,
           title: '新しいタスク',
           body: `${creatorName ?? 'メンバー'}が「${data.title}」を追加しました`,
-          url: '/',
+          url: '/history',
         }),
       }).catch(() => {});
+
+      // Log activity
+      supabase.from('activity_logs').insert({
+        event_type: 'task_created',
+        actor_id: task.created_by,
+        task_title: data.title,
+      }).then(() => {}, () => {});
     }
     return data;
   }, []);
@@ -193,9 +206,18 @@ export function useTasks() {
         exclude_member_id: memberId,
         title: 'タスク完了！',
         body: `${memberName ?? 'メンバー'}が「${task.title}」を完了しました 🎉`,
-        url: '/',
+        url: '/history',
       }),
     }).catch(() => {});
+
+    // Log activity
+    supabase.from('activity_logs').insert({
+      event_type: 'task_completed',
+      actor_id: memberId,
+      task_title: task.title,
+      category_emoji: categoryEmoji,
+      points: task.points,
+    }).then(() => {}, () => {});
 
     return { task_title: task.title, points: task.points };
   }, [tasks]);
@@ -226,9 +248,16 @@ export function useTasks() {
           exclude_member_id: memberId,
           title: 'タスクを引き受けました',
           body: `${currentMemberName ?? 'メンバー'}が「${task?.title ?? 'タスク'}」をやると言いました`,
-          url: '/',
+          url: '/history',
         }),
       }).catch(() => {});
+
+      // Log activity
+      supabase.from('activity_logs').insert({
+        event_type: 'task_self_assigned',
+        actor_id: memberId,
+        task_title: task?.title ?? 'タスク',
+      }).then(() => {}, () => {});
     } else {
       // Request assign ("おねがい"): notify the assigned member
       fetch('/api/push/send', {
@@ -238,9 +267,17 @@ export function useTasks() {
           member_ids: [memberId],
           title: 'タスクがおねがいされました',
           body: `${currentMemberName ?? 'メンバー'}から「${task?.title ?? 'タスク'}」をおねがいされました`,
-          url: '/',
+          url: '/history',
         }),
       }).catch(() => {});
+
+      // Log activity
+      supabase.from('activity_logs').insert({
+        event_type: 'task_request_assigned',
+        actor_id: currentMemberId!,
+        target_member_id: memberId,
+        task_title: task?.title ?? 'タスク',
+      }).then(() => {}, () => {});
     }
   }, [tasks]);
 
@@ -260,5 +297,64 @@ export function useTasks() {
     }
   }, []);
 
-  return { tasks, addTask, completeTask, assignTask, deleteTask, refetch: fetchTasks };
+  const reorderTasks = useCallback(async (reorderedTasks: { id: string; position: number; assigned_to: string | null }[]) => {
+    // Capture for rollback
+    const prevTasks = [...tasks];
+
+    // Optimistic update
+    setTasks(prev => {
+      const updates = new Map(reorderedTasks.map(t => [t.id, t]));
+      return prev.map(t => {
+        const update = updates.get(t.id);
+        if (update) {
+          return { ...t, position: update.position, assigned_to: update.assigned_to };
+        }
+        return t;
+      });
+    });
+
+    // Batch update to Supabase
+    try {
+      const promises = reorderedTasks.map(t =>
+        supabase
+          .from('tasks')
+          .update({ position: t.position, assigned_to: t.assigned_to })
+          .eq('id', t.id)
+      );
+      await Promise.all(promises);
+    } catch {
+      setTasks(prevTasks);
+    }
+  }, [tasks]);
+
+  const sendAssignNotification = useCallback(async (taskId: string, memberId: string, currentMemberId?: string, currentMemberName?: string) => {
+    const task = tasks.find(t => t.id === taskId);
+    const isSelfAssign = memberId === currentMemberId;
+
+    if (isSelfAssign) {
+      fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          exclude_member_id: memberId,
+          title: 'タスクを引き受けました',
+          body: `${currentMemberName ?? 'メンバー'}が「${task?.title ?? 'タスク'}」をやると言いました`,
+          url: '/',
+        }),
+      }).catch(() => {});
+    } else {
+      fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          member_ids: [memberId],
+          title: 'タスクがおねがいされました',
+          body: `${currentMemberName ?? 'メンバー'}から「${task?.title ?? 'タスク'}」をおねがいされました`,
+          url: '/',
+        }),
+      }).catch(() => {});
+    }
+  }, [tasks]);
+
+  return { tasks, addTask, completeTask, assignTask, deleteTask, reorderTasks, sendAssignNotification, refetch: fetchTasks };
 }
