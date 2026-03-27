@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
 import { Bell, X } from 'lucide-react';
 
@@ -8,11 +8,10 @@ const DISMISS_KEY = 'famitask-push-dismissed';
 
 export function PushNotificationPrompt({ memberId }: { memberId: string }) {
   const { isSupported, permission, isSubscribed, subscribe } = usePushNotifications(memberId);
-  const [dismissed, setDismissed] = useState(true);
-
-  useEffect(() => {
-    setDismissed(localStorage.getItem(DISMISS_KEY) === 'true');
-  }, []);
+  const [dismissed, setDismissed] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return localStorage.getItem(DISMISS_KEY) === 'true';
+  });
 
   if (!isSupported || isSubscribed || permission === 'granted' || dismissed) return null;
 
