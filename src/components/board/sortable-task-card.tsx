@@ -31,6 +31,7 @@ export function SortableTaskCard(props: SortableTaskCardProps) {
     transition,
     opacity: isDragging ? 0.4 : 1,
     touchAction: 'manipulation',
+    cursor: 'grab',
   };
 
   return (
