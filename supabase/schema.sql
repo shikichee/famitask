@@ -92,6 +92,18 @@ create table push_subscriptions (
 
 create index idx_push_subscriptions_member on push_subscriptions(member_id);
 
+-- RLS for push_subscriptions
+alter table push_subscriptions enable row level security;
+
+create policy "Authenticated users can read push_subscriptions"
+  on push_subscriptions for select to authenticated using (true);
+
+create policy "Authenticated users can insert push_subscriptions"
+  on push_subscriptions for insert to authenticated with check (true);
+
+create policy "Authenticated users can delete push_subscriptions"
+  on push_subscriptions for delete to authenticated using (true);
+
 -- Enable Realtime
 alter publication supabase_realtime add table tasks;
 alter publication supabase_realtime add table completions;

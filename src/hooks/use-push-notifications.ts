@@ -50,7 +50,7 @@ export function usePushNotifications(memberId: string | undefined): PushState {
 
     const json = sub.toJSON();
 
-    await fetch('/api/push/subscribe', {
+    const res = await fetch('/api/push/subscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -60,6 +60,11 @@ export function usePushNotifications(memberId: string | undefined): PushState {
         auth: json.keys?.auth,
       }),
     });
+
+    if (!res.ok) {
+      await sub.unsubscribe();
+      return;
+    }
 
     setIsSubscribed(true);
   }, [isSupported, memberId]);
