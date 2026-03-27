@@ -5,6 +5,7 @@ import { AppShell } from '@/components/app-shell';
 import { TaskList } from '@/components/board/task-list';
 import { QuickAdd } from '@/components/board/quick-add';
 import { CelebrationOverlay } from '@/components/celebration/celebration-overlay';
+import { TodaysEfforts } from '@/components/board/todays-efforts';
 import { useTasks, useCategories } from '@/hooks/use-tasks';
 import { useFamilyMembers } from '@/hooks/use-family-members';
 
@@ -86,6 +87,12 @@ export default function BoardPage() {
                   onDelete={deleteTask}
                 />
               </section>
+
+              <TodaysEfforts
+                currentMemberId={currentMemberId}
+                isChild={isChild}
+                members={members}
+              />
 
               {otherMembers.map(member => {
                 const memberTasks = tasks.filter(t => t.assigned_to === member.id);
