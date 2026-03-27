@@ -4,7 +4,6 @@ import { ReactNode } from 'react';
 import { Header } from '@/components/layout/header';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { useCurrentMember } from '@/hooks/use-current-member';
-import { useFamilyMembers } from '@/hooks/use-family-members';
 import { useAuthContext } from '@/components/providers/auth-provider';
 
 interface AppShellProps {
@@ -13,8 +12,7 @@ interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps) {
   const { currentMemberId, switchMember, isChild, isAdmin, authLoading } = useCurrentMember();
-  const members = useFamilyMembers();
-  const { signOut } = useAuthContext();
+  const { member, signOut } = useAuthContext();
 
   if (authLoading) {
     return (
@@ -27,10 +25,7 @@ export function AppShell({ children }: AppShellProps) {
   return (
     <>
       <Header
-        members={members}
-        currentMemberId={currentMemberId}
-        onSwitchMember={switchMember}
-        isAdmin={isAdmin}
+        authMember={member}
         onSignOut={signOut}
       />
       <main className="flex-1 pb-20">

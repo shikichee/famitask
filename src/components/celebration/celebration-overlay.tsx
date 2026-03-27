@@ -25,14 +25,14 @@ export function CelebrationOverlay({ show, points, memberName, onDone }: Celebra
         angle: 60,
         spread: 55,
         origin: { x: 0, y: 0.7 },
-        colors: ['#E91E63', '#2196F3', '#FF9800', '#4CAF50', '#9C27B0'],
+        colors: ['#F29F05', '#F28705', '#F25C05', '#F2B199', '#F2F2F2'],
       });
       confetti({
         particleCount: 3,
         angle: 120,
         spread: 55,
         origin: { x: 1, y: 0.7 },
-        colors: ['#E91E63', '#2196F3', '#FF9800', '#4CAF50', '#9C27B0'],
+        colors: ['#F29F05', '#F28705', '#F25C05', '#F2B199', '#F2F2F2'],
       });
 
       if (Date.now() < end) {

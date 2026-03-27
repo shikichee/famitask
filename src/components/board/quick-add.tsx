@@ -68,8 +68,8 @@ export function QuickAdd({ categories, currentMemberId, isChild, onAdd }: QuickA
         className={`
           fixed bottom-20 right-4 z-30
           flex items-center justify-center
-          rounded-full bg-emerald-500 text-white shadow-lg
-          transition-all hover:bg-emerald-600 active:scale-90
+          rounded-full bg-primary text-primary-foreground shadow-lg
+          transition-all hover:opacity-85 active:scale-90
           ${isChild ? 'w-16 h-16 text-3xl' : 'w-14 h-14 text-2xl'}
         `}
         aria-label="タスクを追加"
@@ -112,7 +112,7 @@ export function QuickAdd({ categories, currentMemberId, isChild, onAdd }: QuickA
                   className={`
                     flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all
                     ${cat.id === categoryId
-                      ? 'border-emerald-500 bg-emerald-50'
+                      ? 'border-primary bg-accent'
                       : 'border-transparent bg-muted hover:bg-muted/80'
                     }
                   `}
@@ -139,7 +139,7 @@ export function QuickAdd({ categories, currentMemberId, isChild, onAdd }: QuickA
                   className={`
                     flex-1 flex flex-col items-center gap-1 p-3 rounded-lg border-2 transition-all
                     ${p === points
-                      ? 'border-amber-500 bg-amber-50'
+                      ? 'border-primary bg-accent'
                       : 'border-transparent bg-muted hover:bg-muted/80'
                     }
                   `}
@@ -178,13 +178,13 @@ export function QuickAdd({ categories, currentMemberId, isChild, onAdd }: QuickA
           )}
 
           {error && (
-            <p className="text-sm text-red-500">{error}</p>
+            <p className="text-sm text-destructive">{error}</p>
           )}
 
           <Button
             onClick={handleSubmit}
             disabled={!title.trim() || submitting}
-            className={`w-full bg-emerald-500 hover:bg-emerald-600 text-white ${isChild ? 'h-12 text-lg' : ''}`}
+            className={`w-full ${isChild ? 'h-12 text-lg' : ''}`}
           >
             {submitting ? '...' : isChild ? 'ついかする!' : '追加'}
           </Button>
