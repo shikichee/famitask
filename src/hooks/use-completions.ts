@@ -7,18 +7,23 @@ const supabase = createClient();
 const isSupabaseConfigured = true;
 import { Completion } from '@/types/database';
 
-export function useCompletions() {
+export function useCompletions(options?: { since?: string }) {
   const [completions, setCompletions] = useState<Completion[]>([]);
+  const since = options?.since;
 
   const fetchCompletions = useCallback(async () => {
     if (!isSupabaseConfigured) return;
-    const { data } = await supabase
+    let query = supabase
       .from('completions')
       .select('*')
       .order('completed_at', { ascending: false })
       .limit(100);
+    if (since) {
+      query = query.gte('completed_at', since);
+    }
+    const { data } = await query;
     if (data) setCompletions(data);
-  }, []);
+  }, [since]);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;

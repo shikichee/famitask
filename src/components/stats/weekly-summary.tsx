@@ -1,33 +1,26 @@
 'use client';
 
 import { FamilyMember, Completion } from '@/types/database';
+import { Period } from '@/lib/period-utils';
 
 interface WeeklySummaryProps {
   members: FamilyMember[];
   completions: Completion[];
+  period: Period;
   isChild: boolean;
 }
 
-export function WeeklySummary({ members, completions, isChild }: WeeklySummaryProps) {
-  const now = new Date();
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - now.getDay());
-  weekStart.setHours(0, 0, 0, 0);
-
-  const weekCompletions = completions.filter(c => new Date(c.completed_at) >= weekStart);
-  const totalTasks = weekCompletions.length;
-  const totalPoints = weekCompletions.reduce((sum, c) => sum + c.points, 0);
-
-  // Count per member
-  const memberCounts = new Map<string, number>();
-  weekCompletions.forEach(c => {
-    memberCounts.set(c.member_id, (memberCounts.get(c.member_id) ?? 0) + 1);
-  });
+export function WeeklySummary({ members, completions, period, isChild }: WeeklySummaryProps) {
+  // completions are pre-filtered by period from parent
+  const totalTasks = completions.length;
+  const totalPoints = completions.reduce((sum, c) => sum + c.points, 0);
 
   return (
     <div className="space-y-3">
       <h2 className={`font-bold ${isChild ? 'text-xl' : 'text-lg'}`}>
-        {isChild ? 'こんしゅうのまとめ' : '今週のまとめ'}
+        {period === 'week'
+          ? (isChild ? 'こんしゅうのまとめ' : '今週のまとめ')
+          : (isChild ? 'こんげつのまとめ' : '今月のまとめ')}
       </h2>
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col items-center p-4 rounded-xl bg-card border">
