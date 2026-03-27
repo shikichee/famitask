@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { TaskCategory } from '@/types/database';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -63,8 +63,8 @@ export function QuickAdd({ categories, currentMemberId, isChild, onAdd }: QuickA
   };
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger
         className={`
           fixed bottom-20 right-4 z-30
           flex items-center justify-center
@@ -75,13 +75,13 @@ export function QuickAdd({ categories, currentMemberId, isChild, onAdd }: QuickA
         aria-label="タスクを追加"
       >
         +
-      </SheetTrigger>
-      <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle className={isChild ? 'text-xl' : ''}>
+      </DialogTrigger>
+      <DialogContent className="max-w-[calc(100%-2rem)] max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className={isChild ? 'text-xl' : ''}>
             {isChild ? 'あたらしいおしごと' : 'タスクを追加'}
-          </SheetTitle>
-        </SheetHeader>
+          </DialogTitle>
+        </DialogHeader>
 
         <div className="flex flex-col gap-5 mt-4 pb-4">
           {/* Title */}
@@ -189,7 +189,7 @@ export function QuickAdd({ categories, currentMemberId, isChild, onAdd }: QuickA
             {submitting ? '...' : isChild ? 'ついかする!' : '追加'}
           </Button>
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
