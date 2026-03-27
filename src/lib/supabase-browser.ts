@@ -4,6 +4,13 @@ export function createClient() {
   return createBrowserClient(
     (process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co').trim(),
     (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder').trim(),
-    { isSingleton: true },
+    {
+      isSingleton: true,
+      auth: {
+        lock: async <R>(_name: string, _acquireTimeout: number, fn: () => Promise<R>): Promise<R> => {
+          return fn();
+        },
+      },
+    },
   );
 }
