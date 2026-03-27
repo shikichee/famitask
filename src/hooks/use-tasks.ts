@@ -33,7 +33,7 @@ export function useCategories() {
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
-    supabase.from('task_categories').select('*').then(({ data }) => {
+    supabase.from('task_categories').select('*').then(({ data }: { data: TaskCategory[] | null }) => {
       if (data) setCategories(data);
     });
   }, []);
