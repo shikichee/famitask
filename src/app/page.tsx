@@ -7,6 +7,7 @@ import { QuickAdd } from '@/components/board/quick-add';
 import { CelebrationOverlay } from '@/components/celebration/celebration-overlay';
 import { useTasks, useCategories } from '@/hooks/use-tasks';
 import { useFamilyMembers } from '@/hooks/use-family-members';
+import { PushNotificationPrompt } from '@/components/push-notification-prompt';
 
 export default function BoardPage() {
   const { tasks, addTask, completeTask, assignTask, deleteTask } = useTasks();
@@ -25,7 +26,7 @@ export default function BoardPage() {
       const category = categories.find(c => c.id === task?.category_id);
       const member = members.find(m => m.id === currentMemberId);
 
-      const result = await completeTask(taskId, currentMemberId, category?.emoji ?? '📦');
+      const result = await completeTask(taskId, currentMemberId, category?.emoji ?? '📦', member?.name);
       if (result) {
         setCelebration({
           show: true,
@@ -37,13 +38,6 @@ export default function BoardPage() {
     [tasks, categories, members, completeTask],
   );
 
-  const handleAssign = useCallback(
-    async (taskId: string, memberId: string) => {
-      await assignTask(taskId, memberId);
-    },
-    [assignTask],
-  );
-
   return (
     <AppShell>
       {({ currentMemberId, isChild }) => {
@@ -52,8 +46,17 @@ export default function BoardPage() {
         const otherMembers = members.filter(m => m.id !== currentMemberId);
         const currentMember = members.find(m => m.id === currentMemberId);
 
+        const handleAssign = (taskId: string, memberId: string) => {
+          assignTask(taskId, memberId, currentMemberId, currentMember?.name);
+        };
+
+        const handleAdd = (task: Parameters<typeof addTask>[0]) => {
+          return addTask(task, currentMember?.name);
+        };
+
         return (
           <>
+            <PushNotificationPrompt memberId={currentMemberId} />
             <div className="flex flex-col gap-6 pb-24">
               <section>
                 <h2 className="text-lg font-bold mb-2 flex items-center gap-1">
@@ -113,7 +116,7 @@ export default function BoardPage() {
               categories={categories}
               currentMemberId={currentMemberId}
               isChild={isChild}
-              onAdd={addTask}
+              onAdd={handleAdd}
             />
             <CelebrationOverlay
               show={celebration.show}

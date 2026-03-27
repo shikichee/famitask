@@ -40,6 +40,15 @@ export type Completion = {
   task_id: string | null;
 };
 
+export type PushSubscriptionRecord = {
+  id: string;
+  member_id: string;
+  endpoint: string;
+  p256dh: string;
+  auth: string;
+  created_at: string;
+};
+
 export type Thanks = {
   id: string;
   completion_id: string;

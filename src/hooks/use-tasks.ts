@@ -76,7 +76,7 @@ export function useTasks() {
     adult_only: boolean;
     created_by: string;
     is_recurring: boolean;
-  }) => {
+  }, creatorName?: string) => {
     if (!isSupabaseConfigured) {
       const newTask: Task = {
         id: crypto.randomUUID(),
@@ -101,11 +101,23 @@ export function useTasks() {
     }
     if (data) {
       setTasks(prev => [data, ...prev]);
+
+      // Send push notification to all family members except the creator
+      fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          exclude_member_id: task.created_by,
+          title: '新しいタスク',
+          body: `${creatorName ?? 'メンバー'}が「${data.title}」を追加しました`,
+          url: '/',
+        }),
+      }).catch(() => {});
     }
     return data;
   }, []);
 
-  const completeTask = useCallback(async (taskId: string, memberId: string, categoryEmoji: string) => {
+  const completeTask = useCallback(async (taskId: string, memberId: string, categoryEmoji: string, memberName?: string) => {
     const task = tasks.find(t => t.id === taskId);
     if (!task) return null;
 
@@ -152,10 +164,22 @@ export function useTasks() {
       }
     }
 
+    // Send push notification to all family members except the completer
+    fetch('/api/push/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        exclude_member_id: memberId,
+        title: 'タスク完了！',
+        body: `${memberName ?? 'メンバー'}が「${task.title}」を完了しました 🎉`,
+        url: '/',
+      }),
+    }).catch(() => {});
+
     return { task_title: task.title, points: task.points };
   }, [tasks]);
 
-  const assignTask = useCallback(async (taskId: string, memberId: string) => {
+  const assignTask = useCallback(async (taskId: string, memberId: string, currentMemberId?: string, currentMemberName?: string) => {
     if (!isSupabaseConfigured) {
       setTasks(prev => prev.map(t =>
         t.id === taskId ? { ...t, assigned_to: memberId } : t
@@ -167,7 +191,37 @@ export function useTasks() {
       .from('tasks')
       .update({ assigned_to: memberId })
       .eq('id', taskId);
-  }, []);
+
+    // Send push notification
+    const task = tasks.find(t => t.id === taskId);
+    const isSelfAssign = memberId === currentMemberId;
+
+    if (isSelfAssign) {
+      // Self-assign ("やる!"): notify everyone else
+      fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          exclude_member_id: memberId,
+          title: 'タスクを引き受けました',
+          body: `${currentMemberName ?? 'メンバー'}が「${task?.title ?? 'タスク'}」をやると言いました`,
+          url: '/',
+        }),
+      }).catch(() => {});
+    } else {
+      // Request assign ("おねがい"): notify the assigned member
+      fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          member_ids: [memberId],
+          title: 'タスクがおねがいされました',
+          body: `${currentMemberName ?? 'メンバー'}から「${task?.title ?? 'タスク'}」をおねがいされました`,
+          url: '/',
+        }),
+      }).catch(() => {});
+    }
+  }, [tasks]);
 
   const deleteTask = useCallback(async (taskId: string) => {
     if (!isSupabaseConfigured) {
