@@ -1,5 +1,6 @@
 'use client';
 
+import { memo, useMemo } from 'react';
 import { Heart } from 'lucide-react';
 import { FamilyMember, Completion, Thanks } from '@/types/database';
 
@@ -12,7 +13,7 @@ interface MemberAppreciationCardProps {
   isChild: boolean;
 }
 
-export function MemberAppreciationCard({
+export const MemberAppreciationCard = memo(function MemberAppreciationCard({
   member,
   completions,
   currentMemberId,
@@ -21,34 +22,39 @@ export function MemberAppreciationCard({
   isChild,
 }: MemberAppreciationCardProps) {
   const taskCount = completions.length;
-  const totalPoints = completions.reduce((sum, c) => sum + c.points, 0);
+  const totalPoints = useMemo(() => completions.reduce((sum, c) => sum + c.points, 0), [completions]);
   const isSelf = member.id === currentMemberId;
 
   // Category chips
-  const categoryMap = new Map<string, number>();
-  completions.forEach((c) => {
-    categoryMap.set(c.category_emoji, (categoryMap.get(c.category_emoji) ?? 0) + 1);
-  });
-  const sortedCategories = [...categoryMap.entries()].sort((a, b) => b[1] - a[1]);
+  const sortedCategories = useMemo(() => {
+    const categoryMap = new Map<string, number>();
+    completions.forEach((c) => {
+      categoryMap.set(c.category_emoji, (categoryMap.get(c.category_emoji) ?? 0) + 1);
+    });
+    return [...categoryMap.entries()].sort((a, b) => b[1] - a[1]);
+  }, [completions]);
 
   // Received thanks for self (per completion)
-  const receivedThanksMap = new Map<string, Thanks[]>();
-  if (isSelf) {
-    thanksList.forEach((t) => {
-      if (t.to_member_id === member.id && completions.some((c) => c.id === t.completion_id)) {
-        const arr = receivedThanksMap.get(t.completion_id) ?? [];
-        arr.push(t);
-        receivedThanksMap.set(t.completion_id, arr);
-      }
-    });
-  }
-  const totalReceivedCount = isSelf
-    ? new Set(
+  const { receivedThanksMap, totalReceivedCount } = useMemo(() => {
+    const map = new Map<string, Thanks[]>();
+    let count = 0;
+    if (isSelf) {
+      const completionIds = new Set(completions.map(c => c.id));
+      thanksList.forEach((t) => {
+        if (t.to_member_id === member.id && completionIds.has(t.completion_id)) {
+          const arr = map.get(t.completion_id) ?? [];
+          arr.push(t);
+          map.set(t.completion_id, arr);
+        }
+      });
+      count = new Set(
         thanksList
-          .filter((t) => t.to_member_id === member.id && completions.some((c) => c.id === t.completion_id))
+          .filter((t) => t.to_member_id === member.id && completionIds.has(t.completion_id))
           .map((t) => t.from_member_id)
-      ).size
-    : 0;
+      ).size;
+    }
+    return { receivedThanksMap: map, totalReceivedCount: count };
+  }, [isSelf, thanksList, completions, member.id]);
 
   return (
     <div
@@ -167,4 +173,4 @@ export function MemberAppreciationCard({
       )}
     </div>
   );
-}
+});

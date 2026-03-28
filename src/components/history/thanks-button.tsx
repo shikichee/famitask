@@ -1,5 +1,6 @@
 'use client';
 
+import { memo, useMemo } from 'react';
 import { Heart } from 'lucide-react';
 import { Thanks, FamilyMember } from '@/types/database';
 
@@ -12,7 +13,7 @@ interface ThanksButtonProps {
   onSendThanks: (completionId: string, fromMemberId: string, toMemberId: string) => void;
 }
 
-export function ThanksButton({
+export const ThanksButton = memo(function ThanksButton({
   completionId,
   completionMemberId,
   currentMemberId,
@@ -20,7 +21,10 @@ export function ThanksButton({
   members,
   onSendThanks,
 }: ThanksButtonProps) {
-  const thanksForCompletion = thanksList.filter((t) => t.completion_id === completionId);
+  const thanksForCompletion = useMemo(
+    () => thanksList.filter((t) => t.completion_id === completionId),
+    [thanksList, completionId]
+  );
   const isMine = completionMemberId === currentMemberId;
   const alreadySent = thanksForCompletion.some((t) => t.from_member_id === currentMemberId);
 
@@ -62,4 +66,4 @@ export function ThanksButton({
       <Heart className={`w-5 h-5 ${alreadySent ? 'fill-pink-500' : ''}`} />
     </button>
   );
-}
+});
