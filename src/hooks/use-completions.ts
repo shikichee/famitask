@@ -30,15 +30,31 @@ export function useCompletions(options?: { since?: string }) {
 
     const channel = supabase
       .channel('completions_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'completions' }, () => {
-        fetchCompletions();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'completions' }, (payload: any) => {
+        const newItem = payload.new as Completion;
+        if (since && newItem.completed_at < since) return;
+        setCompletions(prev => {
+          if (prev.some(c => c.id === newItem.id)) return prev;
+          return [newItem, ...prev].slice(0, 100);
+        });
+      })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'completions' }, (payload: any) => {
+        const updated = payload.new as Completion;
+        setCompletions(prev => prev.map(c => c.id === updated.id ? updated : c));
+      })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'completions' }, (payload: any) => {
+        const deleted = payload.old as Completion;
+        setCompletions(prev => prev.filter(c => c.id !== deleted.id));
       })
       .subscribe(() => {
         fetchCompletions();
       });
 
     return () => { supabase.removeChannel(channel); };
-  }, [fetchCompletions]);
+  }, [fetchCompletions, since]);
 
   const deleteCompletion = useCallback(async (completion: Completion) => {
     if (!isSupabaseConfigured) return;

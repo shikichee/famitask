@@ -1,5 +1,6 @@
 'use client';
 
+import { memo, useMemo } from 'react';
 import { Completion } from '@/types/database';
 import { Period } from '@/lib/period-utils';
 
@@ -9,16 +10,17 @@ interface FamilySummaryProps {
   isChild: boolean;
 }
 
-export function FamilySummary({ completions, period, isChild }: FamilySummaryProps) {
+export const FamilySummary = memo(function FamilySummary({ completions, period, isChild }: FamilySummaryProps) {
   const totalTasks = completions.length;
-  const totalPoints = completions.reduce((sum, c) => sum + c.points, 0);
+  const totalPoints = useMemo(() => completions.reduce((sum, c) => sum + c.points, 0), [completions]);
 
-  // Aggregate category emoji counts
-  const categoryMap = new Map<string, number>();
-  completions.forEach((c) => {
-    categoryMap.set(c.category_emoji, (categoryMap.get(c.category_emoji) ?? 0) + 1);
-  });
-  const sortedCategories = [...categoryMap.entries()].sort((a, b) => b[1] - a[1]);
+  const sortedCategories = useMemo(() => {
+    const categoryMap = new Map<string, number>();
+    completions.forEach((c) => {
+      categoryMap.set(c.category_emoji, (categoryMap.get(c.category_emoji) ?? 0) + 1);
+    });
+    return [...categoryMap.entries()].sort((a, b) => b[1] - a[1]);
+  }, [completions]);
 
   const periodLabel = period === 'week'
     ? (isChild ? 'こんしゅうのおうち' : '今週のおうち')
@@ -71,4 +73,4 @@ export function FamilySummary({ completions, period, isChild }: FamilySummaryPro
       </div>
     </div>
   );
-}
+});

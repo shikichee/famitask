@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo, memo } from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Task, TaskCategory, FamilyMember } from '@/types/database';
@@ -17,12 +18,13 @@ interface TaskListProps {
   onDelete: (taskId: string) => void;
 }
 
-export function TaskList({ tasks, categories, members, currentMemberId, isChild, groupId, onComplete, onAssign, onDelete }: TaskListProps) {
-  const filteredTasks = isChild
-    ? tasks.filter(t => !t.adult_only)
-    : tasks;
+export const TaskList = memo(function TaskList({ tasks, categories, members, currentMemberId, isChild, groupId, onComplete, onAssign, onDelete }: TaskListProps) {
+  const filteredTasks = useMemo(
+    () => isChild ? tasks.filter(t => !t.adult_only) : tasks,
+    [tasks, isChild]
+  );
 
-  const categoryMap = new Map(categories.map(c => [c.id, c]));
+  const categoryMap = useMemo(() => new Map(categories.map(c => [c.id, c])), [categories]);
 
   const { setNodeRef } = useDroppable({ id: groupId });
 
@@ -59,4 +61,4 @@ export function TaskList({ tasks, categories, members, currentMemberId, isChild,
       </div>
     </SortableContext>
   );
-}
+});

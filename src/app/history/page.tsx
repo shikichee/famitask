@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { AppShell } from '@/components/app-shell';
 import { useFamilyMembers } from '@/hooks/use-family-members';
 import { useCompletions } from '@/hooks/use-completions';
@@ -70,7 +70,7 @@ export default function HistoryPage() {
   const members = useFamilyMembers();
   const { completions, deleteCompletion } = useCompletions();
   const { activityLogs, deleteActivityLog } = useActivityLogs();
-  const memberMap = new Map<string, FamilyMember>(members.map(m => [m.id, m]));
+  const memberMap = useMemo(() => new Map<string, FamilyMember>(members.map(m => [m.id, m])), [members]);
 
   return (
     <AppShell>
@@ -206,6 +206,8 @@ function ActivityFeed({
   isChild: boolean;
   deleteActivityLog: (id: string) => Promise<void>;
 }) {
+  const grouped = useMemo(() => groupByDate(activityLogs, 'created_at'), [activityLogs]);
+
   if (activityLogs.length === 0) {
     return (
       <div className="flex flex-col items-center py-16 text-muted-foreground">
@@ -214,8 +216,6 @@ function ActivityFeed({
       </div>
     );
   }
-
-  const grouped = groupByDate(activityLogs, 'created_at');
 
   return (
     <div className="space-y-4 mt-3">
@@ -298,6 +298,8 @@ function CompletionsList({
   sendThanks: (completionId: string, fromMemberId: string, toMemberId: string) => Promise<void>;
   setConfirmTarget: (completion: Completion | null) => void;
 }) {
+  const grouped = useMemo(() => groupByDate(completions, 'completed_at'), [completions]);
+
   if (completions.length === 0) {
     return (
       <div className="flex flex-col items-center py-16 text-muted-foreground">
@@ -306,8 +308,6 @@ function CompletionsList({
       </div>
     );
   }
-
-  const grouped = groupByDate(completions, 'completed_at');
 
   return (
     <div className="space-y-4 mt-3">

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import confetti from 'canvas-confetti';
 import { PRAISE_MESSAGES } from '@/lib/constants';
 
 interface CelebrationOverlayProps {
@@ -15,7 +14,8 @@ export function CelebrationOverlay({ show, points, memberName, onDone }: Celebra
   const [praise, setPraise] = useState('');
   const [visible, setVisible] = useState(false);
 
-  const fireConfetti = useCallback(() => {
+  const fireConfetti = useCallback(async () => {
+    const { default: confetti } = await import('canvas-confetti');
     const duration = 2000;
     const end = Date.now() + duration;
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -62,17 +62,19 @@ export function TaskBoardDnd({
     }),
   );
 
-  const categoryMap = new Map(categories.map(c => [c.id, c]));
+  const categoryMap = useMemo(() => new Map(categories.map(c => [c.id, c])), [categories]);
 
   // Group tasks by assigned_to
-  const unassignedTasks = tasks
-    .filter(t => !t.assigned_to)
-    .sort((a, b) => a.position - b.position);
-  const myTasks = tasks
-    .filter(t => t.assigned_to === currentMemberId)
-    .sort((a, b) => a.position - b.position);
-  const otherMembers = members.filter(m => m.id !== currentMemberId);
-  const currentMember = members.find(m => m.id === currentMemberId);
+  const unassignedTasks = useMemo(
+    () => tasks.filter(t => !t.assigned_to).sort((a, b) => a.position - b.position),
+    [tasks]
+  );
+  const myTasks = useMemo(
+    () => tasks.filter(t => t.assigned_to === currentMemberId).sort((a, b) => a.position - b.position),
+    [tasks, currentMemberId]
+  );
+  const otherMembers = useMemo(() => members.filter(m => m.id !== currentMemberId), [members, currentMemberId]);
+  const currentMember = useMemo(() => members.find(m => m.id === currentMemberId), [members, currentMemberId]);
 
   const findGroupForTask = useCallback((taskId: string): string | null => {
     const task = tasks.find(t => t.id === taskId);
