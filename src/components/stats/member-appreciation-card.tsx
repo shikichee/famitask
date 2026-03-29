@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useMemo } from 'react';
-import { Heart } from 'lucide-react';
+import { Heart, Trash2 } from 'lucide-react';
 import { FamilyMember, Completion, Thanks } from '@/types/database';
 
 interface MemberAppreciationCardProps {
@@ -11,6 +11,7 @@ interface MemberAppreciationCardProps {
   thanksList: Thanks[];
   onSendThanks: (completionId: string, fromMemberId: string, toMemberId: string) => void;
   isChild: boolean;
+  onDeleteCompletion?: (completion: Completion) => void;
 }
 
 export const MemberAppreciationCard = memo(function MemberAppreciationCard({
@@ -20,6 +21,7 @@ export const MemberAppreciationCard = memo(function MemberAppreciationCard({
   thanksList,
   onSendThanks,
   isChild,
+  onDeleteCompletion,
 }: MemberAppreciationCardProps) {
   const taskCount = completions.length;
   const totalPoints = useMemo(() => completions.reduce((sum, c) => sum + c.points, 0), [completions]);
@@ -159,6 +161,17 @@ export const MemberAppreciationCard = memo(function MemberAppreciationCard({
                       aria-label={`${c.task_title}にありがとう`}
                     >
                       <Heart className={`w-4 h-4 ${alreadySent ? 'fill-[#F2B199]' : ''}`} />
+                    </button>
+                  )}
+
+                  {onDeleteCompletion && (
+                    <button
+                      type="button"
+                      onClick={() => onDeleteCompletion(c)}
+                      className="shrink-0 p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-muted transition-colors"
+                      aria-label="削除"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>

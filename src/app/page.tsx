@@ -12,7 +12,7 @@ import { useReportEffort } from '@/hooks/use-report-effort';
 import { PushNotificationPrompt } from '@/components/push-notification-prompt';
 
 export default function BoardPage() {
-  const { tasks, addTask, completeTask, assignTask, deleteTask, reorderTasks, sendAssignNotification, refetch } = useTasks();
+  const { tasks, loading, addTask, completeTask, assignTask, deleteTask, reorderTasks, sendAssignNotification, refetch } = useTasks();
   const categories = useCategories();
   const members = useFamilyMembers();
   const { reportEffort } = useReportEffort();
@@ -44,6 +44,14 @@ export default function BoardPage() {
   return (
     <AppShell onRefresh={refetch}>
       {({ currentMemberId, isChild }) => {
+        if (loading) {
+          return (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin h-8 w-8 border-4 border-emerald-500 border-t-transparent rounded-full" />
+            </div>
+          );
+        }
+
         const currentMember = members.find(m => m.id === currentMemberId);
 
         const handleAssign = (taskId: string, memberId: string) => {

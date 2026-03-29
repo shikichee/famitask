@@ -9,6 +9,7 @@ import { Completion } from '@/types/database';
 
 export function useCompletions(options?: { since?: string }) {
   const [completions, setCompletions] = useState<Completion[]>([]);
+  const [loading, setLoading] = useState(isSupabaseConfigured);
   const since = options?.since;
 
   const fetchCompletions = useCallback(async () => {
@@ -17,16 +18,19 @@ export function useCompletions(options?: { since?: string }) {
       .from('completions')
       .select('*')
       .order('completed_at', { ascending: false })
-      .limit(100);
+      .limit(30);
     if (since) {
       query = query.gte('completed_at', since);
     }
     const { data } = await query;
     if (data) setCompletions(data);
+    setLoading(false);
   }, [since]);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
+
+    fetchCompletions();
 
     const channel = supabase
       .channel('completions_changes')
@@ -36,7 +40,7 @@ export function useCompletions(options?: { since?: string }) {
         if (since && newItem.completed_at < since) return;
         setCompletions(prev => {
           if (prev.some(c => c.id === newItem.id)) return prev;
-          return [newItem, ...prev].slice(0, 100);
+          return [newItem, ...prev].slice(0, 30);
         });
       })
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -49,9 +53,7 @@ export function useCompletions(options?: { since?: string }) {
         const deleted = payload.old as Completion;
         setCompletions(prev => prev.filter(c => c.id !== deleted.id));
       })
-      .subscribe(() => {
-        fetchCompletions();
-      });
+      .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [fetchCompletions, since]);
@@ -59,45 +61,11 @@ export function useCompletions(options?: { since?: string }) {
   const deleteCompletion = useCallback(async (completion: Completion) => {
     if (!isSupabaseConfigured) return;
 
-    // Delete completion record
-    const { error } = await supabase
-      .from('completions')
-      .delete()
-      .eq('id', completion.id);
-    if (error) return;
-
-    // Revert task to pending if task_id is available
-    if (completion.task_id) {
-      await supabase
-        .from('tasks')
-        .update({ status: 'pending', completed_by: null, completed_at: null })
-        .eq('id', completion.task_id);
-    }
-
-    // Subtract points from member
-    try {
-      await supabase.rpc('decrement_points', {
-        member_id: completion.member_id,
-        amount: completion.points,
-      });
-    } catch {
-      // Fallback: direct update
-      const { data } = await supabase
-        .from('family_members')
-        .select('total_points')
-        .eq('id', completion.member_id)
-        .single();
-      if (data) {
-        await supabase
-          .from('family_members')
-          .update({ total_points: Math.max((data as { total_points: number }).total_points - completion.points, 0) })
-          .eq('id', completion.member_id);
-      }
-    }
-
-    // Optimistic update
+    // Optimistic update first
     setCompletions(prev => prev.filter(c => c.id !== completion.id));
+
+    await supabase.rpc('delete_completion', { p_completion_id: completion.id });
   }, []);
 
-  return { completions, refetch: fetchCompletions, deleteCompletion };
+  return { completions, loading, refetch: fetchCompletions, deleteCompletion };
 }
