@@ -36,6 +36,15 @@ export function useThanks(currentMemberId: string) {
   }, [fetchThanks, currentMemberId]);
 
   const sendThanks = useCallback(async (completionId: string, fromMemberId: string, toMemberId: string) => {
+    // Optimistic update
+    const optimistic: Thanks = {
+      id: `optimistic-${completionId}-${fromMemberId}`,
+      completion_id: completionId,
+      from_member_id: fromMemberId,
+      to_member_id: toMemberId,
+      created_at: new Date().toISOString(),
+    };
+    setThanksList((prev) => [optimistic, ...prev]);
     await supabase.from('thanks').upsert(
       { completion_id: completionId, from_member_id: fromMemberId, to_member_id: toMemberId },
       { onConflict: 'completion_id,from_member_id' }
@@ -43,9 +52,22 @@ export function useThanks(currentMemberId: string) {
     await supabase.rpc('increment_points', { member_id: toMemberId, amount: 1 });
   }, []);
 
+  const removeThanks = useCallback(async (completionId: string, fromMemberId: string, toMemberId: string) => {
+    // Optimistic update
+    setThanksList((prev) => prev.filter(
+      (t) => !(t.completion_id === completionId && t.from_member_id === fromMemberId)
+    ));
+    await supabase
+      .from('thanks')
+      .delete()
+      .eq('completion_id', completionId)
+      .eq('from_member_id', fromMemberId);
+    await supabase.rpc('increment_points', { member_id: toMemberId, amount: -1 });
+  }, []);
+
   const clearReceivedThanks = useCallback(() => {
     setLatestReceivedThanks(null);
   }, []);
 
-  return { thanksList, sendThanks, latestReceivedThanks, clearReceivedThanks };
+  return { thanksList, sendThanks, removeThanks, latestReceivedThanks, clearReceivedThanks };
 }

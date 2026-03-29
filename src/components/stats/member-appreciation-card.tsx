@@ -10,6 +10,7 @@ interface MemberAppreciationCardProps {
   currentMemberId: string;
   thanksList: Thanks[];
   onSendThanks: (completionId: string, fromMemberId: string, toMemberId: string) => void;
+  onRemoveThanks: (completionId: string, fromMemberId: string, toMemberId: string) => void;
   isChild: boolean;
   onDeleteCompletion?: (completion: Completion) => void;
 }
@@ -20,6 +21,7 @@ export const MemberAppreciationCard = memo(function MemberAppreciationCard({
   currentMemberId,
   thanksList,
   onSendThanks,
+  onRemoveThanks,
   isChild,
   onDeleteCompletion,
 }: MemberAppreciationCardProps) {
@@ -148,14 +150,15 @@ export const MemberAppreciationCard = memo(function MemberAppreciationCard({
                     <button
                       type="button"
                       onClick={() => {
-                        if (!alreadySent) {
+                        if (alreadySent) {
+                          onRemoveThanks(c.id, currentMemberId, member.id);
+                        } else {
                           onSendThanks(c.id, currentMemberId, member.id);
                         }
                       }}
-                      disabled={alreadySent}
                       className={`shrink-0 p-1 rounded-full transition-colors ${
                         alreadySent
-                          ? 'text-[#F2B199] cursor-default'
+                          ? 'text-[#F2B199] hover:text-[#F2B199]/70 active:scale-90 transition-transform'
                           : 'text-muted-foreground hover:text-[#F2B199] active:scale-110 transition-transform'
                       }`}
                       aria-label={`${c.task_title}にありがとう`}

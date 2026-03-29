@@ -44,7 +44,7 @@ function StatsContent({ currentMemberId, isChild }: { currentMemberId: string; i
     [completions, period]
   );
 
-  const { thanksList, sendThanks, latestReceivedThanks, clearReceivedThanks } = useThanks(currentMemberId);
+  const { thanksList, sendThanks, removeThanks, latestReceivedThanks, clearReceivedThanks } = useThanks(currentMemberId);
 
   if (loading) {
     return (
@@ -72,6 +72,7 @@ function StatsContent({ currentMemberId, isChild }: { currentMemberId: string; i
         currentMemberId={currentMemberId}
         thanksList={thanksList}
         onSendThanks={sendThanks}
+        onRemoveThanks={removeThanks}
         isChild={isChild}
         onDeleteCompletion={isChild ? undefined : setConfirmTarget}
       />

@@ -1,6 +1,6 @@
 'use client';
 
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState, useCallback } from 'react';
 import { Heart } from 'lucide-react';
 import { Thanks, FamilyMember } from '@/types/database';
 
@@ -11,6 +11,7 @@ interface ThanksButtonProps {
   thanksList: Thanks[];
   members: Map<string, FamilyMember>;
   onSendThanks: (completionId: string, fromMemberId: string, toMemberId: string) => void;
+  onRemoveThanks: (completionId: string, fromMemberId: string, toMemberId: string) => void;
 }
 
 export const ThanksButton = memo(function ThanksButton({
@@ -20,13 +21,29 @@ export const ThanksButton = memo(function ThanksButton({
   thanksList,
   members,
   onSendThanks,
+  onRemoveThanks,
 }: ThanksButtonProps) {
+  const [popKey, setPopKey] = useState(0);
+  const [optimisticSent, setOptimisticSent] = useState(false);
+
   const thanksForCompletion = useMemo(
     () => thanksList.filter((t) => t.completion_id === completionId),
     [thanksList, completionId]
   );
   const isMine = completionMemberId === currentMemberId;
-  const alreadySent = thanksForCompletion.some((t) => t.from_member_id === currentMemberId);
+  const dbSent = thanksForCompletion.some((t) => t.from_member_id === currentMemberId);
+  const sent = dbSent || optimisticSent;
+
+  const handleClick = useCallback(() => {
+    if (sent) {
+      setOptimisticSent(false);
+      onRemoveThanks(completionId, currentMemberId, completionMemberId);
+    } else {
+      setOptimisticSent(true);
+      setPopKey((k) => k + 1);
+      onSendThanks(completionId, currentMemberId, completionMemberId);
+    }
+  }, [sent, onSendThanks, onRemoveThanks, completionId, currentMemberId, completionMemberId]);
 
   if (isMine) {
     // Show received thanks count and sender avatars
@@ -51,19 +68,19 @@ export const ThanksButton = memo(function ThanksButton({
 
   return (
     <button
-      onClick={() => {
-        if (!alreadySent) {
-          onSendThanks(completionId, currentMemberId, completionMemberId);
-        }
-      }}
-      disabled={alreadySent}
+      onClick={handleClick}
       className={`flex items-center gap-1 transition-colors ${
-        alreadySent
-          ? 'text-pink-500 cursor-default'
-          : 'text-muted-foreground hover:text-pink-500 active:scale-110'
+        sent
+          ? 'text-pink-500 hover:text-pink-400 active:scale-90 transition-transform'
+          : 'text-muted-foreground hover:text-pink-500 active:scale-125 transition-transform'
       }`}
     >
-      <Heart className={`w-5 h-5 ${alreadySent ? 'fill-pink-500' : ''}`} />
+      <Heart
+        key={popKey}
+        className={`w-5 h-5 transition-all duration-300 ${
+          sent ? 'fill-pink-500' : ''
+        } ${optimisticSent && !dbSent ? 'animate-thanks-pop' : ''}`}
+      />
     </button>
   );
 });
