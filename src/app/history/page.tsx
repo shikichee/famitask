@@ -114,7 +114,7 @@ function HistoryContent({
   deleteCompletion: (completion: Completion) => Promise<void>;
   deleteActivityLog: (id: string) => Promise<void>;
 }) {
-  const { thanksList, sendThanks, latestReceivedThanks, clearReceivedThanks } = useThanks(currentMemberId);
+  const { thanksList, sendThanks, removeThanks, latestReceivedThanks, clearReceivedThanks } = useThanks(currentMemberId);
   const [confirmTarget, setConfirmTarget] = useState<Completion | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -159,6 +159,7 @@ function HistoryContent({
             currentMemberId={currentMemberId}
             thanksList={thanksList}
             sendThanks={sendThanks}
+            removeThanks={removeThanks}
             setConfirmTarget={setConfirmTarget}
           />
         </TabsContent>
@@ -296,6 +297,7 @@ function CompletionsList({
   currentMemberId,
   thanksList,
   sendThanks,
+  removeThanks,
   setConfirmTarget,
 }: {
   completions: Completion[];
@@ -304,6 +306,7 @@ function CompletionsList({
   currentMemberId: string;
   thanksList: Thanks[];
   sendThanks: (completionId: string, fromMemberId: string, toMemberId: string) => Promise<void>;
+  removeThanks: (completionId: string, fromMemberId: string, toMemberId: string) => Promise<void>;
   setConfirmTarget: (completion: Completion | null) => void;
 }) {
   const grouped = useMemo(() => groupByDate(completions, 'completed_at'), [completions]);
@@ -352,6 +355,7 @@ function CompletionsList({
                       thanksList={thanksList}
                       members={memberMap}
                       onSendThanks={sendThanks}
+                      onRemoveThanks={removeThanks}
                     />
                   </div>
                   <div className="flex items-center gap-2 shrink-0">

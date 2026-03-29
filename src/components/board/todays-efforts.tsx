@@ -15,7 +15,7 @@ interface TodaysEffortsProps {
 
 export function TodaysEfforts({ currentMemberId, isChild, members }: TodaysEffortsProps) {
   const { completions } = useCompletions();
-  const { thanksList, sendThanks, latestReceivedThanks, clearReceivedThanks } = useThanks(currentMemberId);
+  const { thanksList, sendThanks, removeThanks, latestReceivedThanks, clearReceivedThanks } = useThanks(currentMemberId);
 
   const memberMap = useMemo(
     () => new Map<string, FamilyMember>(members.map(m => [m.id, m])),
@@ -66,6 +66,7 @@ export function TodaysEfforts({ currentMemberId, isChild, members }: TodaysEffor
                     thanksList={thanksList}
                     members={memberMap}
                     onSendThanks={sendThanks}
+                    onRemoveThanks={removeThanks}
                   />
                 </div>
               </div>
