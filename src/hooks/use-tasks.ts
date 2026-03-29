@@ -290,11 +290,15 @@ export function useTasks() {
       return;
     }
 
-    // Optimistic update first
+    const prevTasks = [...tasks];
     setTasks(prev => prev.filter(t => t.id !== taskId));
 
-    await supabase.rpc('delete_task', { p_task_id: taskId });
-  }, []);
+    const { error } = await supabase.rpc('delete_task', { p_task_id: taskId });
+    if (error) {
+      console.error('Failed to delete task:', error);
+      setTasks(prevTasks);
+    }
+  }, [tasks]);
 
   const reorderTasks = useCallback(async (reorderedTasks: { id: string; position: number; assigned_to: string | null }[]) => {
     // Capture for rollback
