@@ -17,10 +17,9 @@ import {
 interface HeaderProps {
   authMember: FamilyMember | null;
   onSignOut: () => void;
-  onRefresh?: () => void;
 }
 
-export function Header({ authMember, onSignOut, onRefresh }: HeaderProps) {
+export function Header({ authMember, onSignOut }: HeaderProps) {
   const { isSupported, permission, isSubscribed, subscribe, unsubscribe } =
     usePushNotifications(authMember?.id);
 
@@ -39,15 +38,13 @@ export function Header({ authMember, onSignOut, onRefresh }: HeaderProps) {
           <h1 className="text-lg font-bold text-[#F28705]">
             ファミタス
           </h1>
-          {onRefresh && (
-            <button
-              onClick={onRefresh}
-              className="flex items-center justify-center w-6 h-6 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              aria-label="タスクを更新"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-            </button>
-          )}
+          <button
+            onClick={() => window.location.reload()}
+            className="flex items-center justify-center w-6 h-6 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            aria-label="ページを更新"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+          </button>
         </div>
         <div className="flex items-center gap-3">
           {authMember && (

@@ -13,7 +13,7 @@ import { PushNotificationPrompt } from '@/components/push-notification-prompt';
 import { RecurringGenerationRunner } from '@/components/board/recurring-generation-runner';
 
 export default function BoardPage() {
-  const { tasks, loading, addTask, completeTask, assignTask, deleteTask, reorderTasks, sendAssignNotification, refetch } = useTasks();
+  const { tasks, loading, addTask, completeTask, assignTask, deleteTask, reorderTasks, sendAssignNotification } = useTasks();
   const categories = useCategories();
   const members = useFamilyMembers();
   const { reportEffort } = useReportEffort();
@@ -43,7 +43,7 @@ export default function BoardPage() {
   );
 
   return (
-    <AppShell onRefresh={refetch}>
+    <AppShell>
       {({ currentMemberId, isChild }) => {
         if (loading) {
           return (
