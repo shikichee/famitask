@@ -27,19 +27,31 @@ export function useRecurringGeneration(currentMemberId: string) {
 
     if (matchingTemplates.length === 0) return;
 
-    // Check which tasks already exist for today
+    // Check which tasks already exist for today + skipped (deleted) ones
     const templateIds = matchingTemplates.map(t => t.id);
-    const { data: existingTasks } = await supabase
-      .from('tasks')
-      .select('recurring_template_id')
-      .in('recurring_template_id', templateIds)
-      .eq('task_date', todayString);
+    const [{ data: existingTasks }, { data: skippedTasks }] = await Promise.all([
+      supabase
+        .from('tasks')
+        .select('recurring_template_id')
+        .in('recurring_template_id', templateIds)
+        .eq('task_date', todayString),
+      supabase
+        .from('recurring_task_skips')
+        .select('template_id')
+        .in('template_id', templateIds)
+        .eq('task_date', todayString),
+    ]);
 
     const existingTemplateIds = new Set(
       (existingTasks ?? []).map(t => t.recurring_template_id)
     );
+    const skippedTemplateIds = new Set(
+      (skippedTasks ?? []).map(t => t.template_id)
+    );
 
-    const toGenerate = matchingTemplates.filter(t => !existingTemplateIds.has(t.id));
+    const toGenerate = matchingTemplates.filter(
+      t => !existingTemplateIds.has(t.id) && !skippedTemplateIds.has(t.id)
+    );
 
     const generatedTitles: string[] = [];
 
