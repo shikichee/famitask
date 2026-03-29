@@ -8,10 +8,9 @@ import { useAuthContext } from '@/components/providers/auth-provider';
 
 interface AppShellProps {
   children: (props: { currentMemberId: string; isChild: boolean }) => ReactNode;
-  onRefresh?: () => void;
 }
 
-export function AppShell({ children, onRefresh }: AppShellProps) {
+export function AppShell({ children }: AppShellProps) {
   const { currentMemberId, isChild, authLoading } = useCurrentMember();
   const { member, signOut } = useAuthContext();
 
@@ -28,7 +27,7 @@ export function AppShell({ children, onRefresh }: AppShellProps) {
       <Header
         authMember={member}
         onSignOut={signOut}
-        onRefresh={onRefresh}
+
       />
       <main className="flex-1 pb-20">
         <div className="max-w-lg mx-auto px-4 py-4">
