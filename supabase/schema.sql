@@ -35,6 +35,8 @@ create table tasks (
   completed_at timestamptz,
   assigned_to uuid references family_members(id),
   is_recurring boolean not null default false,
+  recurring_template_id uuid references recurring_task_templates(id) on delete set null,
+  task_date date,
   created_at timestamptz not null default now(),
   position integer not null default 0
 );
@@ -111,7 +113,7 @@ create policy "Authenticated users can delete push_subscriptions"
 -- Activity logs (all push-notification-worthy events)
 create table activity_logs (
   id uuid primary key default gen_random_uuid(),
-  event_type text not null check (event_type in ('task_created', 'task_completed', 'task_self_assigned', 'task_request_assigned', 'effort_reported')),
+  event_type text not null check (event_type in ('task_created', 'task_completed', 'task_self_assigned', 'task_request_assigned', 'effort_reported', 'recurring_template_created', 'recurring_task_generated')),
   actor_id uuid not null references family_members(id),
   target_member_id uuid references family_members(id),
   task_title text not null,
@@ -133,8 +135,42 @@ create policy "Authenticated users can insert activity_logs"
 create policy "Authenticated users can delete activity_logs"
   on activity_logs for delete to authenticated using (true);
 
+-- Recurring Task Templates
+create table recurring_task_templates (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  category_id uuid not null references task_categories(id),
+  points integer not null default 2 check (points between 1 and 3),
+  adult_only boolean not null default false,
+  created_by uuid not null references family_members(id),
+  recurrence_type text not null check (recurrence_type in ('weekly', 'monthly_nth')),
+  days_of_week integer[] not null,
+  weeks_of_month integer[],
+  generation_time time not null default '18:00',
+  is_active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index idx_recurring_templates_active on recurring_task_templates(is_active);
+
+alter table recurring_task_templates enable row level security;
+
+create policy "Authenticated users can read recurring_task_templates"
+  on recurring_task_templates for select to authenticated using (true);
+
+create policy "Authenticated users can insert recurring_task_templates"
+  on recurring_task_templates for insert to authenticated with check (true);
+
+create policy "Authenticated users can update recurring_task_templates"
+  on recurring_task_templates for update to authenticated using (true) with check (true);
+
+create policy "Authenticated users can delete recurring_task_templates"
+  on recurring_task_templates for delete to authenticated using (true);
+
 -- Enable Realtime
 alter publication supabase_realtime add table tasks;
+alter publication supabase_realtime add table recurring_task_templates;
 alter publication supabase_realtime add table completions;
 alter publication supabase_realtime add table family_members;
 alter publication supabase_realtime add table thanks;

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
+import Link from 'next/link';
 
 interface QuickAddProps {
   categories: TaskCategory[];
@@ -18,7 +19,7 @@ interface QuickAddProps {
     points: number;
     adult_only: boolean;
     created_by: string;
-    is_recurring: boolean;
+    is_recurring: false;
   }) => Promise<unknown>;
 }
 
@@ -28,7 +29,6 @@ export function QuickAdd({ categories, currentMemberId, isChild, onAdd }: QuickA
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? '');
   const [points, setPoints] = useState(2);
   const [adultOnly, setAdultOnly] = useState(false);
-  const [isRecurring, setIsRecurring] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,7 +37,6 @@ export function QuickAdd({ categories, currentMemberId, isChild, onAdd }: QuickA
     setCategoryId(categories[0]?.id ?? '');
     setPoints(2);
     setAdultOnly(false);
-    setIsRecurring(false);
   }, [categories]);
 
   const handleSubmit = async () => {
@@ -51,7 +50,7 @@ export function QuickAdd({ categories, currentMemberId, isChild, onAdd }: QuickA
         points,
         adult_only: adultOnly,
         created_by: currentMemberId,
-        is_recurring: isRecurring,
+        is_recurring: false as const,
       });
       reset();
       setOpen(false);
@@ -166,14 +165,13 @@ export function QuickAdd({ categories, currentMemberId, isChild, onAdd }: QuickA
                   onCheckedChange={setAdultOnly}
                 />
               </div>
-              <div className="flex items-center justify-between">
-                <Label htmlFor="recurring">くりかえしタスク</Label>
-                <Switch
-                  id="recurring"
-                  checked={isRecurring}
-                  onCheckedChange={setIsRecurring}
-                />
-              </div>
+              <Link
+                href="/recurring"
+                className="text-sm text-[#F28705] hover:underline"
+                onClick={() => setOpen(false)}
+              >
+                くりかえしタスクの設定はこちら →
+              </Link>
             </div>
           )}
 
