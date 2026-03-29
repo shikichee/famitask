@@ -41,6 +41,8 @@ export function useRecurringGeneration(currentMemberId: string) {
 
     const toGenerate = matchingTemplates.filter(t => !existingTemplateIds.has(t.id));
 
+    const generatedTitles: string[] = [];
+
     for (const template of toGenerate) {
       // Increment positions for unassigned group
       await supabase.rpc('increment_positions', { p_assigned_to: null });
@@ -65,12 +67,31 @@ export function useRecurringGeneration(currentMemberId: string) {
 
       // Log activity only if task was actually created (not a duplicate)
       if (newTask) {
+        generatedTitles.push(newTask.title);
+
         supabase.from('activity_logs').insert({
           event_type: 'recurring_task_generated',
           actor_id: template.created_by,
           task_title: template.title,
         }).then(() => {}, () => {});
       }
+    }
+
+    // Send one notification for all generated tasks (to all family members)
+    if (generatedTitles.length > 0) {
+      const body = generatedTitles.length === 1
+        ? `くりかえしタスク「${generatedTitles[0]}」が追加されました`
+        : `くりかえしタスクが${generatedTitles.length}件追加されました（${generatedTitles.join('、')}）`;
+
+      fetch('/api/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'くりかえしタスク',
+          body,
+          url: '/',
+        }),
+      }).catch(() => {});
     }
   }, []);
 
