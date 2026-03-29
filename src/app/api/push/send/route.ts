@@ -36,11 +36,17 @@ export async function POST(request: NextRequest) {
   // Determine target member IDs
   let targetMemberIds: string[] = member_ids || [];
 
-  if (exclude_member_id && !member_ids) {
+  if (!member_ids && exclude_member_id) {
     const { data: members } = await supabase
       .from('family_members')
       .select('id')
       .neq('id', exclude_member_id);
+    targetMemberIds = members?.map(m => m.id) ?? [];
+  } else if (!member_ids && !exclude_member_id) {
+    // No filter: send to all family members
+    const { data: members } = await supabase
+      .from('family_members')
+      .select('id');
     targetMemberIds = members?.map(m => m.id) ?? [];
   }
 
