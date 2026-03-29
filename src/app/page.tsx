@@ -10,6 +10,7 @@ import { useTasks, useCategories } from '@/hooks/use-tasks';
 import { useFamilyMembers } from '@/hooks/use-family-members';
 import { useReportEffort } from '@/hooks/use-report-effort';
 import { PushNotificationPrompt } from '@/components/push-notification-prompt';
+import { RecurringGenerationRunner } from '@/components/board/recurring-generation-runner';
 
 export default function BoardPage() {
   const { tasks, loading, addTask, completeTask, assignTask, deleteTask, reorderTasks, sendAssignNotification, refetch } = useTasks();
@@ -64,6 +65,7 @@ export default function BoardPage() {
 
         return (
           <>
+            <RecurringGenerationRunner currentMemberId={currentMemberId} />
             <PushNotificationPrompt memberId={currentMemberId} />
             <TaskBoardDnd
               tasks={tasks}

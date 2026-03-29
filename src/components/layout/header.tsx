@@ -1,7 +1,8 @@
 'use client';
 
 import { FamilyMember } from '@/types/database';
-import { LogOut, Settings, Bell, BellOff, RefreshCw } from 'lucide-react';
+import { LogOut, Settings, Bell, BellOff, RefreshCw, Repeat } from 'lucide-react';
+import Link from 'next/link';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -89,6 +90,14 @@ export function Header({ authMember, onSignOut, onRefresh }: HeaderProps) {
                     />
                   </div>
                 )}
+                <hr className="border-border" />
+                <Link
+                  href="/recurring"
+                  className="flex items-center gap-3 w-full text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
+                >
+                  <Repeat className="w-5 h-5" />
+                  くりかえしタスク設定
+                </Link>
                 <hr className="border-border" />
                 <button
                   onClick={onSignOut}

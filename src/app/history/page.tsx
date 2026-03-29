@@ -64,6 +64,14 @@ const EVENT_CONFIG: Record<ActivityLog['event_type'], { icon: string; label: (ac
     icon: '📣',
     label: (actor, target, title) => `${actor}が${target}のがんばりを報告：「${title}」`,
   },
+  recurring_template_created: {
+    icon: '🔁',
+    label: (actor, _target, title) => `${actor}がくりかえしタスク「${title}」を設定しました`,
+  },
+  recurring_task_generated: {
+    icon: '📅',
+    label: (_actor, _target, title) => `くりかえしタスク「${title}」が自動追加されました`,
+  },
 };
 
 export default function HistoryPage() {
