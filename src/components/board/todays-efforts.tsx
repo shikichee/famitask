@@ -53,7 +53,7 @@ export function TodaysEfforts({ currentMemberId, isChild, members }: TodaysEffor
               >
                 <span className={isChild ? 'text-xl' : 'text-lg'}>{item.category_emoji}</span>
                 <div className="flex-1 min-w-0">
-                  <p className={`font-medium truncate ${isChild ? 'text-base' : 'text-sm'}`}>
+                  <p className={`font-medium line-clamp-2 ${isChild ? 'text-base' : 'text-sm'}`}>
                     {item.task_title}
                   </p>
                 </div>

@@ -35,7 +35,7 @@ export function TaskCard({ task, category, isChild, members, currentMemberId, on
       </span>
 
       <div className="flex-1 min-w-0">
-        <p className={`font-medium truncate ${isChild ? 'text-base' : 'text-sm'}`}>
+        <p className={`font-medium line-clamp-2 ${isChild ? 'text-base' : 'text-sm'}`}>
           {task.title}
         </p>
         <div className="flex items-center gap-2 mt-0.5">

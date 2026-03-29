@@ -129,7 +129,7 @@ export const MemberAppreciationCard = memo(function MemberAppreciationCard({
                   className="flex items-center gap-2 py-1.5 px-2 rounded-lg bg-muted/50"
                 >
                   <span className={isChild ? 'text-base' : 'text-sm'}>{c.category_emoji}</span>
-                  <span className={`flex-1 min-w-0 truncate ${isChild ? 'text-sm' : 'text-xs'} font-medium`}>
+                  <span className={`flex-1 min-w-0 line-clamp-2 ${isChild ? 'text-sm' : 'text-xs'} font-medium`}>
                     {c.task_title}
                   </span>
 
