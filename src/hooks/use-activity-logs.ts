@@ -14,11 +14,14 @@ export function useActivityLogs() {
       .from('activity_logs')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(100);
+      .limit(30);
     if (data) setActivityLogs(data);
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch for external data
+    fetchActivityLogs();
+
     const channel = supabase
       .channel('activity_logs_changes')
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -26,7 +29,7 @@ export function useActivityLogs() {
         const newItem = payload.new as ActivityLog;
         setActivityLogs(prev => {
           if (prev.some(a => a.id === newItem.id)) return prev;
-          return [newItem, ...prev].slice(0, 100);
+          return [newItem, ...prev].slice(0, 30);
         });
       })
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -34,9 +37,7 @@ export function useActivityLogs() {
         const deleted = payload.old as ActivityLog;
         setActivityLogs(prev => prev.filter(a => a.id !== deleted.id));
       })
-      .subscribe(() => {
-        fetchActivityLogs();
-      });
+      .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [fetchActivityLogs]);

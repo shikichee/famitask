@@ -10,6 +10,7 @@ interface MemberAppreciationListProps {
   thanksList: Thanks[];
   onSendThanks: (completionId: string, fromMemberId: string, toMemberId: string) => void;
   isChild: boolean;
+  onDeleteCompletion?: (completion: Completion) => void;
 }
 
 export function MemberAppreciationList({
@@ -19,6 +20,7 @@ export function MemberAppreciationList({
   thanksList,
   onSendThanks,
   isChild,
+  onDeleteCompletion,
 }: MemberAppreciationListProps) {
   return (
     <div className="space-y-4">
@@ -38,6 +40,7 @@ export function MemberAppreciationList({
               thanksList={thanksList}
               onSendThanks={onSendThanks}
               isChild={isChild}
+              onDeleteCompletion={onDeleteCompletion}
             />
           );
         })}

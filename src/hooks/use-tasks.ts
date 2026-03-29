@@ -43,6 +43,7 @@ export function useCategories() {
 
 export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>(isSupabaseConfigured ? [] : DEMO_TASKS);
+  const [loading, setLoading] = useState(isSupabaseConfigured);
 
   const fetchTasks = useCallback(async () => {
     if (!isSupabaseConfigured) return;
@@ -52,22 +53,24 @@ export function useTasks() {
       .eq('status', 'pending')
       .order('position', { ascending: true });
     if (data) setTasks(data);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch for external data
+    fetchTasks();
+
     const channel = supabase
       .channel('tasks_changes')
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks' }, (payload: any) => {
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks', filter: 'status=eq.pending' }, (payload: any) => {
         const newTask = payload.new as Task;
-        if (newTask.status === 'pending') {
-          setTasks(prev => {
-            if (prev.some(t => t.id === newTask.id)) return prev;
-            return [newTask, ...prev];
-          });
-        }
+        setTasks(prev => {
+          if (prev.some(t => t.id === newTask.id)) return prev;
+          return [newTask, ...prev];
+        });
       })
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tasks' }, (payload: any) => {
@@ -83,9 +86,7 @@ export function useTasks() {
         const deleted = payload.old as Task;
         setTasks(prev => prev.filter(t => t.id !== deleted.id));
       })
-      .subscribe(() => {
-        fetchTasks();
-      });
+      .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [fetchTasks]);
@@ -287,14 +288,10 @@ export function useTasks() {
       return;
     }
 
-    const { error } = await supabase
-      .from('tasks')
-      .delete()
-      .eq('id', taskId);
+    // Optimistic update first
+    setTasks(prev => prev.filter(t => t.id !== taskId));
 
-    if (!error) {
-      setTasks(prev => prev.filter(t => t.id !== taskId));
-    }
+    await supabase.rpc('delete_task', { p_task_id: taskId });
   }, []);
 
   const reorderTasks = useCallback(async (reorderedTasks: { id: string; position: number; assigned_to: string | null }[]) => {
@@ -356,5 +353,5 @@ export function useTasks() {
     }
   }, [tasks]);
 
-  return { tasks, addTask, completeTask, assignTask, deleteTask, reorderTasks, sendAssignNotification, refetch: fetchTasks };
+  return { tasks, loading, addTask, completeTask, assignTask, deleteTask, reorderTasks, sendAssignNotification, refetch: fetchTasks };
 }

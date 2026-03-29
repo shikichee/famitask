@@ -46,8 +46,6 @@ export function CelebrationOverlay({ show, points, memberName, onDone }: Celebra
   useEffect(() => {
     if (show) {
       const msg = PRAISE_MESSAGES[Math.floor(Math.random() * PRAISE_MESSAGES.length)];
-      // Responding to show prop change — intentional synchronous update
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPraise(msg);
       setVisible(true);
       fireConfetti();
