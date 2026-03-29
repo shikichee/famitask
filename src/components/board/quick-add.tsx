@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { TaskCategory } from '@/types/database';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,7 @@ export function QuickAdd({ categories, currentMemberId, isChild, onAdd }: QuickA
   const [adultOnly, setAdultOnly] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const submittingRef = useRef(false);
 
   const reset = useCallback(() => {
     setTitle('');
@@ -41,6 +42,8 @@ export function QuickAdd({ categories, currentMemberId, isChild, onAdd }: QuickA
 
   const handleSubmit = async () => {
     if (!title.trim() || !categoryId) return;
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setSubmitting(true);
     setError(null);
     try {
@@ -57,6 +60,7 @@ export function QuickAdd({ categories, currentMemberId, isChild, onAdd }: QuickA
     } catch (e) {
       setError(e instanceof Error ? e.message : 'タスクの追加に失敗しました');
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };

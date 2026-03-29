@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { RecurringTaskTemplate, TaskCategory } from '@/types/database';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -56,6 +56,7 @@ export function TemplateForm({ open, onOpenChange, categories, currentMemberId, 
   const [generationTime, setGenerationTime] = useState(editTemplate?.generation_time?.slice(0, 5) ?? '18:00');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const submittingRef = useRef(false);
 
   const resetForm = useCallback(() => {
     setTitle('');
@@ -92,6 +93,8 @@ export function TemplateForm({ open, onOpenChange, categories, currentMemberId, 
       return;
     }
 
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setSubmitting(true);
     setError(null);
     try {
@@ -111,6 +114,7 @@ export function TemplateForm({ open, onOpenChange, categories, currentMemberId, 
     } catch (e) {
       setError(e instanceof Error ? e.message : '保存に失敗しました');
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
