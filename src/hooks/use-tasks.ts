@@ -59,6 +59,7 @@ export function useTasks() {
   useEffect(() => {
     if (!isSupabaseConfigured) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch for external data
     fetchTasks();
 
     const channel = supabase

@@ -19,6 +19,7 @@ export function useActivityLogs() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch for external data
     fetchActivityLogs();
 
     const channel = supabase

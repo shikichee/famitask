@@ -30,6 +30,7 @@ export function useCompletions(options?: { since?: string }) {
   useEffect(() => {
     if (!isSupabaseConfigured) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch for external data
     fetchCompletions();
 
     const channel = supabase
