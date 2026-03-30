@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase-browser';
+import { useRealtimeEvent } from './use-realtime';
 import { RecurringTaskTemplate } from '@/types/database';
 
 const supabase = createClient();
@@ -22,31 +23,25 @@ export function useRecurringTemplates() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch for external data
     fetchTemplates();
-
-    const channel = supabase
-      .channel('recurring_templates_changes')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'recurring_task_templates' }, (payload: any) => {
-        const newTemplate = payload.new as RecurringTaskTemplate;
-        setTemplates(prev => {
-          if (prev.some(t => t.id === newTemplate.id)) return prev;
-          return [newTemplate, ...prev];
-        });
-      })
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'recurring_task_templates' }, (payload: any) => {
-        const updated = payload.new as RecurringTaskTemplate;
-        setTemplates(prev => prev.map(t => t.id === updated.id ? updated : t));
-      })
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'recurring_task_templates' }, (payload: any) => {
-        const deleted = payload.old as RecurringTaskTemplate;
-        setTemplates(prev => prev.filter(t => t.id !== deleted.id));
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
   }, [fetchTemplates]);
+
+  useRealtimeEvent('recurring_task_templates', 'INSERT', (payload) => {
+    const newTemplate = payload.new as RecurringTaskTemplate;
+    setTemplates(prev => {
+      if (prev.some(t => t.id === newTemplate.id)) return prev;
+      return [newTemplate, ...prev];
+    });
+  });
+
+  useRealtimeEvent('recurring_task_templates', 'UPDATE', (payload) => {
+    const updated = payload.new as RecurringTaskTemplate;
+    setTemplates(prev => prev.map(t => t.id === updated.id ? updated : t));
+  });
+
+  useRealtimeEvent('recurring_task_templates', 'DELETE', (payload) => {
+    const deleted = payload.old as RecurringTaskTemplate;
+    setTemplates(prev => prev.filter(t => t.id !== deleted.id));
+  });
 
   const addTemplate = useCallback(async (template: {
     title: string;

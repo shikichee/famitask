@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase-browser';
+import { useRealtimeEvent } from './use-realtime';
 
 const supabase = createClient();
 const isSupabaseConfigured = true;
@@ -44,6 +45,8 @@ export function useCategories() {
 export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>(isSupabaseConfigured ? [] : DEMO_TASKS);
   const [loading, setLoading] = useState(isSupabaseConfigured);
+  const tasksRef = useRef(tasks);
+  useEffect(() => { tasksRef.current = tasks; }, [tasks]);
 
   const fetchTasks = useCallback(async () => {
     if (!isSupabaseConfigured) return;
@@ -58,38 +61,32 @@ export function useTasks() {
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
-
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch for external data
     fetchTasks();
-
-    const channel = supabase
-      .channel('tasks_changes')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'tasks', filter: 'status=eq.pending' }, (payload: any) => {
-        const newTask = payload.new as Task;
-        setTasks(prev => {
-          if (prev.some(t => t.id === newTask.id)) return prev;
-          return [newTask, ...prev];
-        });
-      })
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'tasks' }, (payload: any) => {
-        const updated = payload.new as Task;
-        if (updated.status !== 'pending') {
-          setTasks(prev => prev.filter(t => t.id !== updated.id));
-        } else {
-          setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
-        }
-      })
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'tasks' }, (payload: any) => {
-        const deleted = payload.old as Task;
-        setTasks(prev => prev.filter(t => t.id !== deleted.id));
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
   }, [fetchTasks]);
+
+  useRealtimeEvent('tasks', 'INSERT', (payload) => {
+    const newTask = payload.new as Task;
+    if (newTask.status !== 'pending') return;
+    setTasks(prev => {
+      if (prev.some(t => t.id === newTask.id)) return prev;
+      return [newTask, ...prev];
+    });
+  }, 'status=eq.pending');
+
+  useRealtimeEvent('tasks', 'UPDATE', (payload) => {
+    const updated = payload.new as Task;
+    if (updated.status !== 'pending') {
+      setTasks(prev => prev.filter(t => t.id !== updated.id));
+    } else {
+      setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
+    }
+  });
+
+  useRealtimeEvent('tasks', 'DELETE', (payload) => {
+    const deleted = payload.old as Task;
+    setTasks(prev => prev.filter(t => t.id !== deleted.id));
+  });
 
   const addTask = useCallback(async (task: {
     title: string;
@@ -155,7 +152,7 @@ export function useTasks() {
   }, []);
 
   const completeTask = useCallback(async (taskId: string, memberId: string, categoryEmoji: string, memberName?: string) => {
-    const task = tasks.find(t => t.id === taskId);
+    const task = tasksRef.current.find(t => t.id === taskId);
     if (!task) return null;
 
     if (!isSupabaseConfigured) {
@@ -163,45 +160,31 @@ export function useTasks() {
       return { task_title: task.title, points: task.points };
     }
 
+    // Optimistic UI update
+    setTasks(prev => prev.filter(t => t.id !== taskId));
+
     const now = new Date().toISOString();
 
-    // Update task
-    await supabase
-      .from('tasks')
-      .update({ status: 'done', completed_by: memberId, completed_at: now })
-      .eq('id', taskId);
+    // Execute DB operations in parallel
+    await Promise.all([
+      supabase
+        .from('tasks')
+        .update({ status: 'done', completed_by: memberId, completed_at: now })
+        .eq('id', taskId),
+      supabase
+        .from('completions')
+        .insert({
+          task_title: task.title,
+          category_emoji: categoryEmoji,
+          member_id: memberId,
+          points: task.points,
+          completed_at: now,
+          task_id: taskId,
+        }),
+      supabase.rpc('increment_points', { member_id: memberId, amount: task.points }),
+    ]);
 
-    // Add completion record
-    await supabase
-      .from('completions')
-      .insert({
-        task_title: task.title,
-        category_emoji: categoryEmoji,
-        member_id: memberId,
-        points: task.points,
-        completed_at: now,
-        task_id: taskId,
-      });
-
-    // Update member points
-    try {
-      await supabase.rpc('increment_points', { member_id: memberId, amount: task.points });
-    } catch {
-      // Fallback: direct update if RPC doesn't exist
-      const { data } = await supabase
-        .from('family_members')
-        .select('total_points')
-        .eq('id', memberId)
-        .single();
-      if (data) {
-        await supabase
-          .from('family_members')
-          .update({ total_points: (data as { total_points: number }).total_points + task.points })
-          .eq('id', memberId);
-      }
-    }
-
-    // Send push notification to all family members except the completer
+    // Fire-and-forget: push notification + activity log
     fetch('/api/push/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -213,7 +196,6 @@ export function useTasks() {
       }),
     }).catch(() => {});
 
-    // Log activity
     supabase.from('activity_logs').insert({
       event_type: 'task_completed',
       actor_id: memberId,
@@ -223,7 +205,7 @@ export function useTasks() {
     }).then(() => {}, () => {});
 
     return { task_title: task.title, points: task.points };
-  }, [tasks]);
+  }, []);
 
   const assignTask = useCallback(async (taskId: string, memberId: string, currentMemberId?: string, currentMemberName?: string) => {
     if (!isSupabaseConfigured) {
@@ -239,7 +221,7 @@ export function useTasks() {
       .eq('id', taskId);
 
     // Send push notification
-    const task = tasks.find(t => t.id === taskId);
+    const task = tasksRef.current.find(t => t.id === taskId);
     const isSelfAssign = memberId === currentMemberId;
 
     if (isSelfAssign) {
@@ -282,7 +264,7 @@ export function useTasks() {
         task_title: task?.title ?? 'タスク',
       }).then(() => {}, () => {});
     }
-  }, [tasks]);
+  }, []);
 
   const deleteTask = useCallback(async (taskId: string) => {
     if (!isSupabaseConfigured) {
@@ -290,7 +272,7 @@ export function useTasks() {
       return;
     }
 
-    const prevTasks = [...tasks];
+    const prevTasks = [...tasksRef.current];
     setTasks(prev => prev.filter(t => t.id !== taskId));
 
     const { error } = await supabase.rpc('delete_task', { p_task_id: taskId });
@@ -298,11 +280,11 @@ export function useTasks() {
       console.error('Failed to delete task:', error);
       setTasks(prevTasks);
     }
-  }, [tasks]);
+  }, []);
 
   const reorderTasks = useCallback(async (reorderedTasks: { id: string; position: number; assigned_to: string | null }[]) => {
     // Capture for rollback
-    const prevTasks = [...tasks];
+    const prevTasks = [...tasksRef.current];
 
     // Optimistic update
     setTasks(prev => {
@@ -328,7 +310,7 @@ export function useTasks() {
     } catch {
       setTasks(prevTasks);
     }
-  }, [tasks]);
+  }, []);
 
   const updateTask = useCallback(async (taskId: string, updates: {
     title: string;
@@ -341,7 +323,7 @@ export function useTasks() {
       return;
     }
 
-    const prevTasks = [...tasks];
+    const prevTasks = [...tasksRef.current];
     setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
 
     const { error } = await supabase
@@ -353,10 +335,10 @@ export function useTasks() {
       console.error('Failed to update task:', error);
       setTasks(prevTasks);
     }
-  }, [tasks]);
+  }, []);
 
   const sendAssignNotification = useCallback(async (taskId: string, memberId: string, currentMemberId?: string, currentMemberName?: string) => {
-    const task = tasks.find(t => t.id === taskId);
+    const task = tasksRef.current.find(t => t.id === taskId);
     const isSelfAssign = memberId === currentMemberId;
 
     if (isSelfAssign) {
@@ -382,7 +364,7 @@ export function useTasks() {
         }),
       }).catch(() => {});
     }
-  }, [tasks]);
+  }, []);
 
   return { tasks, loading, addTask, completeTask, assignTask, deleteTask, updateTask, reorderTasks, sendAssignNotification, refetch: fetchTasks };
 }

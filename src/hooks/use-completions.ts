@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase-browser';
+import { useRealtimeEvent } from './use-realtime';
 
 const supabase = createClient();
 const isSupabaseConfigured = true;
@@ -27,37 +28,33 @@ export function useCompletions(options?: { since?: string }) {
     setLoading(false);
   }, [since]);
 
+  const sinceRef = useRef(since);
+  useEffect(() => { sinceRef.current = since; }, [since]);
+
   useEffect(() => {
     if (!isSupabaseConfigured) return;
-
     // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch for external data
     fetchCompletions();
-
-    const channel = supabase
-      .channel('completions_changes')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'completions' }, (payload: any) => {
-        const newItem = payload.new as Completion;
-        if (since && newItem.completed_at < since) return;
-        setCompletions(prev => {
-          if (prev.some(c => c.id === newItem.id)) return prev;
-          return [newItem, ...prev].slice(0, 30);
-        });
-      })
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'completions' }, (payload: any) => {
-        const updated = payload.new as Completion;
-        setCompletions(prev => prev.map(c => c.id === updated.id ? updated : c));
-      })
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'completions' }, (payload: any) => {
-        const deleted = payload.old as Completion;
-        setCompletions(prev => prev.filter(c => c.id !== deleted.id));
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
   }, [fetchCompletions, since]);
+
+  useRealtimeEvent('completions', 'INSERT', (payload) => {
+    const newItem = payload.new as Completion;
+    if (sinceRef.current && newItem.completed_at < sinceRef.current) return;
+    setCompletions(prev => {
+      if (prev.some(c => c.id === newItem.id)) return prev;
+      return [newItem, ...prev].slice(0, 30);
+    });
+  });
+
+  useRealtimeEvent('completions', 'UPDATE', (payload) => {
+    const updated = payload.new as Completion;
+    setCompletions(prev => prev.map(c => c.id === updated.id ? updated : c));
+  });
+
+  useRealtimeEvent('completions', 'DELETE', (payload) => {
+    const deleted = payload.old as Completion;
+    setCompletions(prev => prev.filter(c => c.id !== deleted.id));
+  });
 
   const deleteCompletion = useCallback(async (completion: Completion) => {
     if (!isSupabaseConfigured) return;
@@ -81,6 +78,9 @@ export function useCompletions(options?: { since?: string }) {
     });
   }, []);
 
+  const completionsRef = useRef(completions);
+  useEffect(() => { completionsRef.current = completions; }, [completions]);
+
   const updateCompletion = useCallback(async (completionId: string, updates: {
     task_title: string;
     category_emoji: string;
@@ -88,8 +88,8 @@ export function useCompletions(options?: { since?: string }) {
   }) => {
     if (!isSupabaseConfigured) return;
 
-    const prev = [...completions];
-    const oldCompletion = completions.find(c => c.id === completionId);
+    const snapshot = [...completionsRef.current];
+    const oldCompletion = completionsRef.current.find(c => c.id === completionId);
     setCompletions(cs => cs.map(c => c.id === completionId ? { ...c, ...updates } : c));
 
     // If points changed, use the RPC to adjust member total_points
@@ -100,7 +100,7 @@ export function useCompletions(options?: { since?: string }) {
       });
       if (error) {
         console.error('Failed to update completion points:', error);
-        setCompletions(prev);
+        setCompletions(snapshot);
         return;
       }
     }
@@ -113,9 +113,9 @@ export function useCompletions(options?: { since?: string }) {
 
     if (error) {
       console.error('Failed to update completion:', error);
-      setCompletions(prev);
+      setCompletions(snapshot);
     }
-  }, [completions]);
+  }, []);
 
   const undoCompletion = useCallback(async (completion: Completion) => {
     if (!isSupabaseConfigured) return;
