@@ -117,5 +117,14 @@ export function useCompletions(options?: { since?: string }) {
     }
   }, [completions]);
 
-  return { completions, loading, refetch: fetchCompletions, deleteCompletion, updateCompletionPoints, updateCompletion };
+  const undoCompletion = useCallback(async (completion: Completion) => {
+    if (!isSupabaseConfigured) return;
+
+    // Optimistic update
+    setCompletions(prev => prev.filter(c => c.id !== completion.id));
+
+    await supabase.rpc('undo_completion', { p_completion_id: completion.id });
+  }, []);
+
+  return { completions, loading, refetch: fetchCompletions, deleteCompletion, undoCompletion, updateCompletionPoints, updateCompletion };
 }
