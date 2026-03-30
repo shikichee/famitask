@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { Completion, TaskCategory } from '@/types/database';
+import { Completion } from '@/types/database';
 import { AppShell } from '@/components/app-shell';
 import { PeriodToggle } from '@/components/stats/period-toggle';
 import { FamilySummary } from '@/components/stats/family-summary';
