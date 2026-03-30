@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback } from 'react';
-import { Completion, TaskCategory } from '@/types/database';
+import { Completion } from '@/types/database';
 import { AppShell } from '@/components/app-shell';
 import { PeriodToggle } from '@/components/stats/period-toggle';
 import { FamilySummary } from '@/components/stats/family-summary';
@@ -28,10 +28,12 @@ function StatsContent({ currentMemberId, isChild }: { currentMemberId: string; i
   const members = useFamilyMembers();
 
   const since = useMemo(() => getPeriodStart('month').toISOString(), []);
-  const { completions, loading, deleteCompletion, updateCompletion } = useCompletions({ since });
+  const { completions, loading, deleteCompletion, undoCompletion, updateCompletion } = useCompletions({ since });
   const categories = useCategories();
   const [confirmTarget, setConfirmTarget] = useState<Completion | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [undoTarget, setUndoTarget] = useState<Completion | null>(null);
+  const [undoing, setUndoing] = useState(false);
   const [editTarget, setEditTarget] = useState<Completion | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editEmoji, setEditEmoji] = useState('');
@@ -43,6 +45,14 @@ function StatsContent({ currentMemberId, isChild }: { currentMemberId: string; i
     setDeleting(false);
     setConfirmTarget(null);
   }, [confirmTarget, deleteCompletion]);
+
+  const handleUndo = useCallback(async () => {
+    if (!undoTarget) return;
+    setUndoing(true);
+    await undoCompletion(undoTarget);
+    setUndoing(false);
+    setUndoTarget(null);
+  }, [undoTarget, undoCompletion]);
 
   const [editPoints, setEditPoints] = useState(2);
 
@@ -99,6 +109,7 @@ function StatsContent({ currentMemberId, isChild }: { currentMemberId: string; i
         onRemoveThanks={removeThanks}
         isChild={isChild}
         onDeleteCompletion={isChild ? undefined : setConfirmTarget}
+        onUndoCompletion={isChild ? undefined : setUndoTarget}
         onEditCompletion={isChild ? undefined : handleEditOpen}
       />
       <ThanksOverlay
@@ -217,6 +228,35 @@ function StatsContent({ currentMemberId, isChild }: { currentMemberId: string; i
                 disabled={deleting}
               >
                 {deleting ? '削除中...' : '削除する'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {undoTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-card rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl space-y-4">
+            <p className="font-bold text-base">完了を取り消しますか？</p>
+            <p className="text-sm text-muted-foreground">
+              「{undoTarget.task_title}」の完了を取り消し、{undoTarget.points}ptを差し引いてタスクをボードに戻します。
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setUndoTarget(null)}
+                className="flex-1 py-2 rounded-xl border text-sm font-medium"
+                disabled={undoing}
+              >
+                キャンセル
+              </button>
+              <button
+                type="button"
+                onClick={handleUndo}
+                className="flex-1 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-colors disabled:opacity-50"
+                disabled={undoing}
+              >
+                {undoing ? '取り消し中...' : '取り消す'}
               </button>
             </div>
           </div>

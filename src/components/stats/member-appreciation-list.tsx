@@ -12,6 +12,7 @@ interface MemberAppreciationListProps {
   onRemoveThanks: (completionId: string, fromMemberId: string, toMemberId: string) => void;
   isChild: boolean;
   onDeleteCompletion?: (completion: Completion) => void;
+  onUndoCompletion?: (completion: Completion) => void;
   onEditCompletion?: (completion: Completion) => void;
 }
 
@@ -24,6 +25,7 @@ export function MemberAppreciationList({
   onRemoveThanks,
   isChild,
   onDeleteCompletion,
+  onUndoCompletion,
   onEditCompletion,
 }: MemberAppreciationListProps) {
   return (
@@ -46,6 +48,7 @@ export function MemberAppreciationList({
               onRemoveThanks={onRemoveThanks}
               isChild={isChild}
               onDeleteCompletion={onDeleteCompletion}
+              onUndoCompletion={onUndoCompletion}
               onEditCompletion={onEditCompletion}
             />
           );
