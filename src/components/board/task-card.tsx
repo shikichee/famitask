@@ -30,37 +30,39 @@ export const TaskCard = memo(function TaskCard({ task, category, isChild, member
   const otherMembers = members.filter(m => m.id !== currentMemberId);
 
   return (
-    <div className="flex items-center gap-3 p-3 rounded-xl bg-card border transition-all hover:shadow-sm active:scale-[0.98]">
-      <span className={`${isChild ? 'text-2xl' : 'text-xl'} shrink-0`}>
-        {category?.emoji ?? '📦'}
-      </span>
+    <div className="flex flex-col gap-2 p-3 rounded-xl bg-card border transition-all hover:shadow-sm active:scale-[0.98]">
+      <div className="flex items-center gap-3">
+        <span className={`${isChild ? 'text-2xl' : 'text-xl'} shrink-0`}>
+          {category?.emoji ?? '📦'}
+        </span>
 
-      <div className="flex-1 min-w-0">
-        <p className={`font-medium line-clamp-2 ${isChild ? 'text-base' : 'text-sm'}`}>
-          {task.title}
-        </p>
-        <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-xs" style={{ color: '#F29F05' }}>{POINTS_STARS[task.points]}</span>
-          {task.is_recurring && (
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-              くりかえし
-            </Badge>
-          )}
-          {task.adult_only && (
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-              おとな
-            </Badge>
-          )}
-          {assignedMember && (
-            <span className="text-xs text-muted-foreground">
-              → {assignedMember.avatar} {assignedMember.name}
-            </span>
-          )}
+        <div className="flex-1 min-w-0">
+          <p className={`font-medium line-clamp-2 ${isChild ? 'text-base' : 'text-sm'}`}>
+            {task.title}
+          </p>
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+            <span className="text-xs" style={{ color: '#F29F05' }}>{POINTS_STARS[task.points]}</span>
+            {task.is_recurring && (
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                くりかえし
+              </Badge>
+            )}
+            {task.adult_only && (
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                おとな
+              </Badge>
+            )}
+            {assignedMember && (
+              <span className="text-xs text-muted-foreground">
+                → {assignedMember.avatar} {assignedMember.name}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
       <div
-        className="flex items-center gap-1.5 shrink-0"
+        className="flex items-center gap-1.5 justify-end"
         onPointerDown={(e) => e.stopPropagation()}
         onTouchStart={(e) => e.stopPropagation()}
       >
