@@ -16,9 +16,10 @@ interface TaskListProps {
   onComplete: (taskId: string) => void;
   onAssign: (taskId: string, memberId: string) => void;
   onDelete: (taskId: string) => void;
+  onEdit?: (task: Task) => void;
 }
 
-export const TaskList = memo(function TaskList({ tasks, categories, members, currentMemberId, isChild, groupId, onComplete, onAssign, onDelete }: TaskListProps) {
+export const TaskList = memo(function TaskList({ tasks, categories, members, currentMemberId, isChild, groupId, onComplete, onAssign, onDelete, onEdit }: TaskListProps) {
   const filteredTasks = useMemo(
     () => isChild ? tasks.filter(t => !t.adult_only) : tasks,
     [tasks, isChild]
@@ -56,6 +57,7 @@ export const TaskList = memo(function TaskList({ tasks, categories, members, cur
             onComplete={onComplete}
             onAssign={onAssign}
             onDelete={onDelete}
+            onEdit={onEdit}
           />
         ))}
       </div>

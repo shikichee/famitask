@@ -14,6 +14,7 @@ interface SortableTaskCardProps {
   onComplete: (taskId: string) => void;
   onAssign: (taskId: string, memberId: string) => void;
   onDelete: (taskId: string) => void;
+  onEdit?: (task: Task) => void;
 }
 
 export function SortableTaskCard(props: SortableTaskCardProps) {

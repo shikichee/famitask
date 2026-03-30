@@ -11,9 +11,10 @@ import { useFamilyMembers } from '@/hooks/use-family-members';
 import { useReportEffort } from '@/hooks/use-report-effort';
 import { PushNotificationPrompt } from '@/components/push-notification-prompt';
 import { RecurringGenerationRunner } from '@/components/board/recurring-generation-runner';
+import { Task } from '@/types/database';
 
 export default function BoardPage() {
-  const { tasks, loading, addTask, completeTask, assignTask, deleteTask, reorderTasks, sendAssignNotification } = useTasks();
+  const { tasks, loading, addTask, completeTask, assignTask, deleteTask, updateTask, reorderTasks, sendAssignNotification } = useTasks();
   const categories = useCategories();
   const members = useFamilyMembers();
   const { reportEffort } = useReportEffort();
@@ -23,6 +24,9 @@ export default function BoardPage() {
     points: number;
     memberName: string;
   }>({ show: false, points: 0, memberName: '' });
+
+  const [editTask, setEditTask] = useState<Task | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
   const handleComplete = useCallback(
     async (taskId: string, currentMemberId: string) => {
@@ -41,6 +45,16 @@ export default function BoardPage() {
     },
     [tasks, categories, members, completeTask],
   );
+
+  const handleEdit = useCallback((task: Task) => {
+    setEditTask(task);
+    setEditOpen(true);
+  }, []);
+
+  const handleEditOpenChange = useCallback((open: boolean) => {
+    setEditOpen(open);
+    if (!open) setEditTask(null);
+  }, []);
 
   return (
     <AppShell>
@@ -78,6 +92,7 @@ export default function BoardPage() {
               onDelete={deleteTask}
               onReorder={reorderTasks}
               onSendAssignNotification={(taskId, memberId) => sendAssignNotification(taskId, memberId, currentMemberId, currentMember?.name)}
+              onEdit={handleEdit}
             />
             <ReportEffort
               categories={categories}
@@ -95,6 +110,19 @@ export default function BoardPage() {
               isChild={isChild}
               onAdd={handleAdd}
             />
+            {editOpen && (
+              <QuickAdd
+                key={editTask?.id}
+                categories={categories}
+                currentMemberId={currentMemberId}
+                isChild={isChild}
+                onAdd={handleAdd}
+                editTask={editTask}
+                editOpen={editOpen}
+                onEditOpenChange={handleEditOpenChange}
+                onUpdate={updateTask}
+              />
+            )}
             <CelebrationOverlay
               show={celebration.show}
               points={celebration.points}

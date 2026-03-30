@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
-import { TaskCategory } from '@/types/database';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { Task, TaskCategory } from '@/types/database';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,9 +21,19 @@ interface QuickAddProps {
     created_by: string;
     is_recurring: false;
   }) => Promise<unknown>;
+  editTask?: Task | null;
+  editOpen?: boolean;
+  onEditOpenChange?: (open: boolean) => void;
+  onUpdate?: (taskId: string, updates: {
+    title: string;
+    category_id: string;
+    points: number;
+    adult_only: boolean;
+  }) => Promise<unknown>;
 }
 
-export function QuickAdd({ categories, currentMemberId, isChild, onAdd }: QuickAddProps) {
+export function QuickAdd({ categories, currentMemberId, isChild, onAdd, editTask, editOpen, onEditOpenChange, onUpdate }: QuickAddProps) {
+  const isEditMode = !!editTask;
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState('');
   const [categoryId, setCategoryId] = useState(categories[0]?.id ?? '');
@@ -32,6 +42,17 @@ export function QuickAdd({ categories, currentMemberId, isChild, onAdd }: QuickA
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const submittingRef = useRef(false);
+
+  // Populate form when editTask changes
+  useEffect(() => {
+    if (editTask) {
+      setTitle(editTask.title);
+      setCategoryId(editTask.category_id);
+      setPoints(editTask.points);
+      setAdultOnly(editTask.adult_only);
+      setError(null);
+    }
+  }, [editTask]);
 
   const reset = useCallback(() => {
     setTitle('');
@@ -47,42 +68,61 @@ export function QuickAdd({ categories, currentMemberId, isChild, onAdd }: QuickA
     setSubmitting(true);
     setError(null);
     try {
-      await onAdd({
-        title: title.trim(),
-        category_id: categoryId,
-        points,
-        adult_only: adultOnly,
-        created_by: currentMemberId,
-        is_recurring: false as const,
-      });
-      reset();
-      setOpen(false);
+      if (isEditMode && onUpdate) {
+        await onUpdate(editTask.id, {
+          title: title.trim(),
+          category_id: categoryId,
+          points,
+          adult_only: adultOnly,
+        });
+        onEditOpenChange?.(false);
+      } else {
+        await onAdd({
+          title: title.trim(),
+          category_id: categoryId,
+          points,
+          adult_only: adultOnly,
+          created_by: currentMemberId,
+          is_recurring: false as const,
+        });
+        reset();
+        setOpen(false);
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'タスクの追加に失敗しました');
+      setError(e instanceof Error ? e.message : isEditMode ? 'タスクの更新に失敗しました' : 'タスクの追加に失敗しました');
     } finally {
       submittingRef.current = false;
       setSubmitting(false);
     }
   };
 
+  const dialogOpen = isEditMode ? (editOpen ?? false) : open;
+  const setDialogOpen = isEditMode
+    ? (v: boolean) => onEditOpenChange?.(v)
+    : setOpen;
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        className={`
-          fixed bottom-20 right-4 z-30
-          flex items-center justify-center
-          rounded-full bg-[#F25C05] text-white shadow-lg
-          transition-all hover:opacity-85 active:scale-90
-          ${isChild ? 'w-16 h-16 text-3xl' : 'w-14 h-14 text-2xl'}
-        `}
-        aria-label="タスクを追加"
-      >
-        +
-      </DialogTrigger>
+    <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {!isEditMode && (
+        <DialogTrigger
+          className={`
+            fixed bottom-20 right-4 z-30
+            flex items-center justify-center
+            rounded-full bg-[#F25C05] text-white shadow-lg
+            transition-all hover:opacity-85 active:scale-90
+            ${isChild ? 'w-16 h-16 text-3xl' : 'w-14 h-14 text-2xl'}
+          `}
+          aria-label="タスクを追加"
+        >
+          +
+        </DialogTrigger>
+      )}
       <DialogContent className="max-w-[calc(100%-2rem)] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className={isChild ? 'text-xl' : ''}>
-            {isChild ? 'あたらしいおしごと' : 'タスクを追加'}
+            {isEditMode
+              ? (isChild ? 'おしごとをへんしゅう' : 'タスクを編集')
+              : (isChild ? 'あたらしいおしごと' : 'タスクを追加')}
           </DialogTitle>
         </DialogHeader>
 
@@ -169,13 +209,15 @@ export function QuickAdd({ categories, currentMemberId, isChild, onAdd }: QuickA
                   onCheckedChange={setAdultOnly}
                 />
               </div>
-              <Link
-                href="/recurring"
-                className="text-sm text-[#F28705] hover:underline"
-                onClick={() => setOpen(false)}
-              >
-                くりかえしタスクの設定はこちら →
-              </Link>
+              {!isEditMode && (
+                <Link
+                  href="/recurring"
+                  className="text-sm text-[#F28705] hover:underline"
+                  onClick={() => setOpen(false)}
+                >
+                  くりかえしタスクの設定はこちら →
+                </Link>
+              )}
             </div>
           )}
 
@@ -188,7 +230,9 @@ export function QuickAdd({ categories, currentMemberId, isChild, onAdd }: QuickA
             disabled={!title.trim() || submitting}
             className={`w-full ${isChild ? 'h-12 text-lg' : ''}`}
           >
-            {submitting ? '...' : isChild ? 'ついかする!' : '追加'}
+            {submitting ? '...' : isEditMode
+              ? (isChild ? 'こうしんする!' : '更新')
+              : (isChild ? 'ついかする!' : '追加')}
           </Button>
         </div>
       </DialogContent>
