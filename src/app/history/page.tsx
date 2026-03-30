@@ -8,8 +8,9 @@ import { useActivityLogs } from '@/hooks/use-activity-logs';
 import { useThanks } from '@/hooks/use-thanks';
 import { ThanksButton } from '@/components/history/thanks-button';
 import { ThanksOverlay } from '@/components/celebration/thanks-overlay';
+import { useCategories } from '@/hooks/use-tasks';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Completion, FamilyMember, ActivityLog, Thanks } from '@/types/database';
+import { Completion, FamilyMember, ActivityLog, Thanks, TaskCategory } from '@/types/database';
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -76,8 +77,9 @@ const EVENT_CONFIG: Record<ActivityLog['event_type'], { icon: string; label: (ac
 
 export default function HistoryPage() {
   const members = useFamilyMembers();
-  const { completions, deleteCompletion } = useCompletions();
+  const { completions, deleteCompletion, updateCompletionPoints, updateCompletion } = useCompletions();
   const { activityLogs, deleteActivityLog } = useActivityLogs();
+  const categories = useCategories();
   const memberMap = useMemo(() => new Map<string, FamilyMember>(members.map(m => [m.id, m])), [members]);
 
   return (
@@ -89,7 +91,10 @@ export default function HistoryPage() {
           completions={isChild ? completions.filter(c => !c.adult_only) : completions}
           activityLogs={activityLogs}
           memberMap={memberMap}
+          categories={categories}
           deleteCompletion={deleteCompletion}
+          updateCompletionPoints={updateCompletionPoints}
+          updateCompletion={updateCompletion}
           deleteActivityLog={deleteActivityLog}
         />
       )}
@@ -103,7 +108,10 @@ function HistoryContent({
   completions,
   activityLogs,
   memberMap,
+  categories,
   deleteCompletion,
+  updateCompletionPoints,
+  updateCompletion,
   deleteActivityLog,
 }: {
   currentMemberId: string;
@@ -111,7 +119,10 @@ function HistoryContent({
   completions: Completion[];
   activityLogs: ActivityLog[];
   memberMap: Map<string, FamilyMember>;
+  categories: TaskCategory[];
   deleteCompletion: (completion: Completion) => Promise<void>;
+  updateCompletionPoints: (completionId: string, newPoints: number) => Promise<void>;
+  updateCompletion: (completionId: string, updates: { task_title: string; category_emoji: string; points: number }) => Promise<void>;
   deleteActivityLog: (id: string) => Promise<void>;
 }) {
   const { thanksList, sendThanks, removeThanks, latestReceivedThanks, clearReceivedThanks } = useThanks(currentMemberId);
@@ -155,12 +166,15 @@ function HistoryContent({
           <CompletionsList
             completions={completions}
             memberMap={memberMap}
+            categories={categories}
             isChild={isChild}
             currentMemberId={currentMemberId}
             thanksList={thanksList}
             sendThanks={sendThanks}
             removeThanks={removeThanks}
             setConfirmTarget={setConfirmTarget}
+            updateCompletionPoints={updateCompletionPoints}
+            updateCompletion={updateCompletion}
           />
         </TabsContent>
       </Tabs>
@@ -172,7 +186,6 @@ function HistoryContent({
             <p className="font-bold text-base">履歴を削除しますか？</p>
             <p className="text-sm text-muted-foreground">
               「{confirmTarget.task_title}」の完了記録を削除し、{confirmTarget.points}ptを差し引きます。
-              {confirmTarget.task_id && 'タスクはボードに戻ります。'}
             </p>
             <div className="flex gap-3">
               <button
@@ -293,23 +306,50 @@ function ActivityFeed({
 function CompletionsList({
   completions,
   memberMap,
+  categories,
   isChild,
   currentMemberId,
   thanksList,
   sendThanks,
   removeThanks,
   setConfirmTarget,
+  updateCompletionPoints,
+  updateCompletion,
 }: {
   completions: Completion[];
   memberMap: Map<string, FamilyMember>;
+  categories: TaskCategory[];
   isChild: boolean;
   currentMemberId: string;
   thanksList: Thanks[];
   sendThanks: (completionId: string, fromMemberId: string, toMemberId: string) => Promise<void>;
   removeThanks: (completionId: string, fromMemberId: string, toMemberId: string) => Promise<void>;
   setConfirmTarget: (completion: Completion | null) => void;
+  updateCompletionPoints: (completionId: string, newPoints: number) => Promise<void>;
+  updateCompletion: (completionId: string, updates: { task_title: string; category_emoji: string; points: number }) => Promise<void>;
 }) {
   const grouped = useMemo(() => groupByDate(completions, 'completed_at'), [completions]);
+  const [editTarget, setEditTarget] = useState<Completion | null>(null);
+  const [editTitle, setEditTitle] = useState('');
+  const [editEmoji, setEditEmoji] = useState('');
+  const [editPoints, setEditPoints] = useState(2);
+
+  const handleEditOpen = (item: Completion) => {
+    setEditTarget(item);
+    setEditTitle(item.task_title);
+    setEditEmoji(item.category_emoji);
+    setEditPoints(item.points);
+  };
+
+  const handleEditSave = async () => {
+    if (!editTarget || !editTitle.trim()) return;
+    await updateCompletion(editTarget.id, {
+      task_title: editTitle.trim(),
+      category_emoji: editEmoji,
+      points: editPoints,
+    });
+    setEditTarget(null);
+  };
 
   if (completions.length === 0) {
     return (
@@ -321,67 +361,184 @@ function CompletionsList({
   }
 
   return (
-    <div className="space-y-4 mt-3">
-      {[...grouped.entries()].map(([dateKey, items]) => (
-        <div key={dateKey}>
-          <h3 className="text-sm font-semibold text-muted-foreground mb-2">
-            {formatGroupDate(dateKey)}
-          </h3>
-          <div className="space-y-2">
-            {items.map((item) => {
-              const member = memberMap.get(item.member_id);
-              return (
-                <div
-                  key={item.id}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-card border"
-                >
-                  <span className={isChild ? 'text-xl' : 'text-lg'}>{item.category_emoji}</span>
-                  <div className="flex-1 min-w-0">
-                    <p className={`font-medium line-clamp-2 ${isChild ? 'text-base' : 'text-sm'}`}>
-                      {item.task_title}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDate(item.completed_at)}
-                    </p>
-                    {item.reported_by && (
-                      <p className="text-xs text-muted-foreground">
-                        📣 {memberMap.get(item.reported_by)?.avatar} {isChild ? 'がほうこく' : 'が報告'}
+    <>
+      <div className="space-y-4 mt-3">
+        {[...grouped.entries()].map(([dateKey, items]) => (
+          <div key={dateKey}>
+            <h3 className="text-sm font-semibold text-muted-foreground mb-2">
+              {formatGroupDate(dateKey)}
+            </h3>
+            <div className="space-y-2">
+              {items.map((item) => {
+                const member = memberMap.get(item.member_id);
+                return (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-card border"
+                  >
+                    <span className={isChild ? 'text-xl' : 'text-lg'}>{item.category_emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <p className={`font-medium line-clamp-2 ${isChild ? 'text-base' : 'text-sm'}`}>
+                        {item.task_title}
                       </p>
-                    )}
-                    <ThanksButton
-                      completionId={item.id}
-                      completionMemberId={item.member_id}
-                      currentMemberId={currentMemberId}
-                      thanksList={thanksList}
-                      members={memberMap}
-                      onSendThanks={sendThanks}
-                      onRemoveThanks={removeThanks}
-                    />
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(item.completed_at)}
+                      </p>
+                      {item.reported_by && (
+                        <p className="text-xs text-muted-foreground">
+                          📣 {memberMap.get(item.reported_by)?.avatar} {isChild ? 'がほうこく' : 'が報告'}
+                        </p>
+                      )}
+                      <ThanksButton
+                        completionId={item.id}
+                        completionMemberId={item.member_id}
+                        currentMemberId={currentMemberId}
+                        thanksList={thanksList}
+                        members={memberMap}
+                        onSendThanks={sendThanks}
+                        onRemoveThanks={removeThanks}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={isChild ? 'text-lg' : 'text-base'}>{member?.avatar}</span>
+                      {!isChild ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const next = item.points >= 3 ? 1 : item.points + 1;
+                            updateCompletionPoints(item.id, next);
+                          }}
+                          className="text-sm font-bold text-primary hover:bg-accent px-1.5 py-0.5 rounded-md transition-colors"
+                        >
+                          {'★'.repeat(item.points)} {item.points}pt
+                        </button>
+                      ) : (
+                        <span className="text-sm font-bold text-primary">
+                          {'★'.repeat(item.points)} {item.points}pt
+                        </span>
+                      )}
+                      {!isChild && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleEditOpen(item)}
+                            className="p-1 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+                            aria-label="編集"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                              <path d="m15 5 4 4"/>
+                            </svg>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setConfirmTarget(item)}
+                            className="p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-muted transition-colors"
+                            aria-label="削除"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                            </svg>
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className={isChild ? 'text-lg' : 'text-base'}>{member?.avatar}</span>
-                    <span className="text-sm font-bold text-primary">
-                      +{item.points}pt
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Edit completion dialog */}
+      {editTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+          onClick={() => setEditTarget(null)}
+        >
+          <div
+            className="bg-card rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="font-bold text-base">履歴を編集</p>
+            <div>
+              <label className="text-sm font-medium">タスク名</label>
+              <input
+                type="text"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="mt-1 w-full rounded-lg border bg-background px-3 py-2 text-sm"
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">カテゴリ</label>
+              <div className="grid grid-cols-4 gap-2 mt-1">
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setEditEmoji(cat.emoji)}
+                    className={`
+                      flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all
+                      ${cat.emoji === editEmoji
+                        ? 'border-primary bg-accent'
+                        : 'border-transparent bg-muted hover:bg-muted/80'
+                      }
+                    `}
+                  >
+                    <span className="text-xl">{cat.emoji}</span>
+                    <span className="text-[10px] font-medium">{cat.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="text-sm font-medium">ポイント</label>
+              <div className="flex gap-2 mt-1">
+                {[1, 2, 3].map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setEditPoints(p)}
+                    className={`
+                      flex-1 flex flex-col items-center gap-1 p-2 rounded-lg border-2 transition-all
+                      ${p === editPoints
+                        ? 'border-primary bg-accent'
+                        : 'border-transparent bg-muted hover:bg-muted/80'
+                      }
+                    `}
+                  >
+                    <span className="text-sm">{'★'.repeat(p)}</span>
+                    <span className="text-[10px] font-medium text-muted-foreground">
+                      {p === 1 ? 'かるい' : p === 2 ? 'ふつう' : 'がんばった'}
                     </span>
-                    {!isChild && (
-                      <button
-                        type="button"
-                        onClick={() => setConfirmTarget(item)}
-                        className="ml-1 p-1 rounded-lg text-muted-foreground hover:text-destructive hover:bg-muted transition-colors"
-                        aria-label="削除"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M3 6h18" /><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" /><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setEditTarget(null)}
+                className="flex-1 py-2 rounded-xl border text-sm font-medium"
+              >
+                キャンセル
+              </button>
+              <button
+                type="button"
+                onClick={handleEditSave}
+                disabled={!editTitle.trim()}
+                className="flex-1 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-colors disabled:opacity-50"
+              >
+                更新
+              </button>
+            </div>
           </div>
         </div>
-      ))}
-    </div>
+      )}
+
+    </>
   );
 }

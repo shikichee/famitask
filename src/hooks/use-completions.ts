@@ -68,5 +68,54 @@ export function useCompletions(options?: { since?: string }) {
     await supabase.rpc('delete_completion', { p_completion_id: completion.id });
   }, []);
 
-  return { completions, loading, refetch: fetchCompletions, deleteCompletion };
+  const updateCompletionPoints = useCallback(async (completionId: string, newPoints: number) => {
+    if (!isSupabaseConfigured) return;
+
+    setCompletions(prev => prev.map(c =>
+      c.id === completionId ? { ...c, points: newPoints } : c
+    ));
+
+    await supabase.rpc('update_completion_points', {
+      p_completion_id: completionId,
+      p_new_points: newPoints,
+    });
+  }, []);
+
+  const updateCompletion = useCallback(async (completionId: string, updates: {
+    task_title: string;
+    category_emoji: string;
+    points: number;
+  }) => {
+    if (!isSupabaseConfigured) return;
+
+    const prev = [...completions];
+    const oldCompletion = completions.find(c => c.id === completionId);
+    setCompletions(cs => cs.map(c => c.id === completionId ? { ...c, ...updates } : c));
+
+    // If points changed, use the RPC to adjust member total_points
+    if (oldCompletion && oldCompletion.points !== updates.points) {
+      const { error } = await supabase.rpc('update_completion_points', {
+        p_completion_id: completionId,
+        p_new_points: updates.points,
+      });
+      if (error) {
+        console.error('Failed to update completion points:', error);
+        setCompletions(prev);
+        return;
+      }
+    }
+
+    // Update title and category_emoji
+    const { error } = await supabase
+      .from('completions')
+      .update({ task_title: updates.task_title, category_emoji: updates.category_emoji })
+      .eq('id', completionId);
+
+    if (error) {
+      console.error('Failed to update completion:', error);
+      setCompletions(prev);
+    }
+  }, [completions]);
+
+  return { completions, loading, refetch: fetchCompletions, deleteCompletion, updateCompletionPoints, updateCompletion };
 }

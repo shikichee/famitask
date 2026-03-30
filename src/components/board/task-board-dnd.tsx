@@ -37,6 +37,7 @@ interface TaskBoardDndProps {
   onDelete: (taskId: string) => void;
   onReorder: (updates: { id: string; position: number; assigned_to: string | null }[]) => void;
   onSendAssignNotification: (taskId: string, memberId: string) => void;
+  onEdit?: (task: Task) => void;
 }
 
 export function TaskBoardDnd({
@@ -50,6 +51,7 @@ export function TaskBoardDnd({
   onDelete,
   onReorder,
   onSendAssignNotification,
+  onEdit,
 }: TaskBoardDndProps) {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
 
@@ -206,6 +208,7 @@ export function TaskBoardDnd({
             onComplete={onComplete}
             onAssign={onAssign}
             onDelete={onDelete}
+            onEdit={onEdit}
           />
         </section>
 
@@ -223,6 +226,7 @@ export function TaskBoardDnd({
             onComplete={onComplete}
             onAssign={onAssign}
             onDelete={onDelete}
+            onEdit={onEdit}
           />
         </section>
 

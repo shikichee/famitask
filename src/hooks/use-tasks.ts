@@ -330,6 +330,31 @@ export function useTasks() {
     }
   }, [tasks]);
 
+  const updateTask = useCallback(async (taskId: string, updates: {
+    title: string;
+    category_id: string;
+    points: number;
+    adult_only: boolean;
+  }) => {
+    if (!isSupabaseConfigured) {
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
+      return;
+    }
+
+    const prevTasks = [...tasks];
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
+
+    const { error } = await supabase
+      .from('tasks')
+      .update(updates)
+      .eq('id', taskId);
+
+    if (error) {
+      console.error('Failed to update task:', error);
+      setTasks(prevTasks);
+    }
+  }, [tasks]);
+
   const sendAssignNotification = useCallback(async (taskId: string, memberId: string, currentMemberId?: string, currentMemberName?: string) => {
     const task = tasks.find(t => t.id === taskId);
     const isSelfAssign = memberId === currentMemberId;
@@ -359,5 +384,5 @@ export function useTasks() {
     }
   }, [tasks]);
 
-  return { tasks, loading, addTask, completeTask, assignTask, deleteTask, reorderTasks, sendAssignNotification, refetch: fetchTasks };
+  return { tasks, loading, addTask, completeTask, assignTask, deleteTask, updateTask, reorderTasks, sendAssignNotification, refetch: fetchTasks };
 }

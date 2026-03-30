@@ -1,7 +1,7 @@
 'use client';
 
 import { memo, useMemo } from 'react';
-import { Heart, Trash2 } from 'lucide-react';
+import { Heart, Trash2, Pencil } from 'lucide-react';
 import { FamilyMember, Completion, Thanks } from '@/types/database';
 
 interface MemberAppreciationCardProps {
@@ -13,6 +13,7 @@ interface MemberAppreciationCardProps {
   onRemoveThanks: (completionId: string, fromMemberId: string, toMemberId: string) => void;
   isChild: boolean;
   onDeleteCompletion?: (completion: Completion) => void;
+  onEditCompletion?: (completion: Completion) => void;
 }
 
 export const MemberAppreciationCard = memo(function MemberAppreciationCard({
@@ -24,6 +25,7 @@ export const MemberAppreciationCard = memo(function MemberAppreciationCard({
   onRemoveThanks,
   isChild,
   onDeleteCompletion,
+  onEditCompletion,
 }: MemberAppreciationCardProps) {
   const taskCount = completions.length;
   const totalPoints = useMemo(() => completions.reduce((sum, c) => sum + c.points, 0), [completions]);
@@ -167,6 +169,16 @@ export const MemberAppreciationCard = memo(function MemberAppreciationCard({
                     </button>
                   )}
 
+                  {onEditCompletion && (
+                    <button
+                      type="button"
+                      onClick={() => onEditCompletion(c)}
+                      className="shrink-0 p-1 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted transition-colors"
+                      aria-label="編集"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                   {onDeleteCompletion && (
                     <button
                       type="button"

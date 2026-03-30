@@ -30,13 +30,6 @@ BEGIN
   -- 完了レコード削除
   DELETE FROM completions WHERE id = p_completion_id;
 
-  -- タスクをボードに戻す
-  IF v_task_id IS NOT NULL THEN
-    UPDATE tasks
-      SET status = 'pending', completed_by = NULL, completed_at = NULL
-      WHERE id = v_task_id;
-  END IF;
-
   -- ポイント差し引き
   UPDATE family_members
     SET total_points = GREATEST(total_points - v_points, 0)
