@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { Task, TaskCategory, FamilyMember } from '@/types/database';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +23,7 @@ const POINTS_STARS: Record<number, string> = {
   3: '★★★',
 };
 
-export function TaskCard({ task, category, isChild, members, currentMemberId, onComplete, onAssign, onDelete, onEdit }: TaskCardProps) {
+export const TaskCard = memo(function TaskCard({ task, category, isChild, members, currentMemberId, onComplete, onAssign, onDelete, onEdit }: TaskCardProps) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const assignedMember = task.assigned_to ? members.find(m => m.id === task.assigned_to) : null;
@@ -186,4 +186,4 @@ export function TaskCard({ task, category, isChild, members, currentMemberId, on
       )}
     </div>
   );
-}
+});

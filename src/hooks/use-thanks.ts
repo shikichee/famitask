@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase-browser';
+import { useRealtimeEvent } from './use-realtime';
 import { Thanks } from '@/types/database';
 
 const supabase = createClient();
@@ -14,26 +15,26 @@ export function useThanks(currentMemberId: string) {
     const { data } = await supabase
       .from('thanks')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(100);
     if (data) setThanksList(data);
   }, []);
 
-  useEffect(() => {
-    const channel = supabase
-      .channel('thanks_changes')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'thanks' }, (payload: { new: Thanks }) => {
-        const newThanks = payload.new;
-        setThanksList((prev) => [newThanks, ...prev]);
-        if (newThanks.to_member_id === currentMemberId) {
-          setLatestReceivedThanks(newThanks);
-        }
-      })
-      .subscribe(() => {
-        fetchThanks();
-      });
+  const currentMemberIdRef = useRef(currentMemberId);
+  useEffect(() => { currentMemberIdRef.current = currentMemberId; }, [currentMemberId]);
 
-    return () => { supabase.removeChannel(channel); };
-  }, [fetchThanks, currentMemberId]);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch for external data
+    fetchThanks();
+  }, [fetchThanks]);
+
+  useRealtimeEvent('thanks', 'INSERT', (payload) => {
+    const newThanks = payload.new as Thanks;
+    setThanksList((prev) => [newThanks, ...prev]);
+    if (newThanks.to_member_id === currentMemberIdRef.current) {
+      setLatestReceivedThanks(newThanks);
+    }
+  });
 
   const sendThanks = useCallback(async (completionId: string, fromMemberId: string, toMemberId: string) => {
     // Optimistic update

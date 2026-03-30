@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase-browser';
+import { useRealtimeEvent } from './use-realtime';
 
 const supabase = createClient();
 const isSupabaseConfigured = true;
@@ -28,16 +29,25 @@ export function useFamilyMembers() {
     };
 
     fetchMembers();
-
-    const channel = supabase
-      .channel('family_members_changes')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'family_members' }, () => {
-        fetchMembers();
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
   }, []);
+
+  useRealtimeEvent('family_members', 'INSERT', (payload) => {
+    const newMember = payload.new as FamilyMember;
+    setMembers(prev => {
+      if (prev.some(m => m.id === newMember.id)) return prev;
+      return [...prev, newMember].sort((a, b) => a.name.localeCompare(b.name));
+    });
+  });
+
+  useRealtimeEvent('family_members', 'UPDATE', (payload) => {
+    const updated = payload.new as FamilyMember;
+    setMembers(prev => prev.map(m => m.id === updated.id ? updated : m));
+  });
+
+  useRealtimeEvent('family_members', 'DELETE', (payload) => {
+    const deleted = payload.old as FamilyMember;
+    setMembers(prev => prev.filter(m => m.id !== deleted.id));
+  });
 
   return members;
 }

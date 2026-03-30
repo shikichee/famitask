@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { PRAISE_MESSAGES } from '@/lib/constants';
 
 interface CelebrationOverlayProps {
@@ -13,9 +13,28 @@ interface CelebrationOverlayProps {
 export function CelebrationOverlay({ show, points, memberName, onDone }: CelebrationOverlayProps) {
   const [praise, setPraise] = useState('');
   const [visible, setVisible] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const confettiRef = useRef<any>(null);
+
+  // Preload canvas-confetti during idle time
+  useEffect(() => {
+    const load = () => { import('canvas-confetti').then(m => { confettiRef.current = m.default; }); };
+    if (typeof requestIdleCallback !== 'undefined') {
+      const id = requestIdleCallback(load);
+      return () => cancelIdleCallback(id);
+    } else {
+      const id = setTimeout(load, 1000);
+      return () => clearTimeout(id);
+    }
+  }, []);
 
   const fireConfetti = useCallback(async () => {
-    const { default: confetti } = await import('canvas-confetti');
+    let confetti = confettiRef.current;
+    if (!confetti) {
+      const m = await import('canvas-confetti');
+      confetti = m.default;
+      confettiRef.current = confetti;
+    }
     const duration = 2000;
     const end = Date.now() + duration;
 

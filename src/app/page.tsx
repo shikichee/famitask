@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { AppShell } from '@/components/app-shell';
 import { TaskBoardDnd } from '@/components/board/task-board-dnd';
 import { QuickAdd } from '@/components/board/quick-add';
@@ -28,11 +28,20 @@ export default function BoardPage() {
   const [editTask, setEditTask] = useState<Task | null>(null);
   const [editOpen, setEditOpen] = useState(false);
 
+  // Refs for stable callbacks that need render-prop values
+  const tasksRef = useRef(tasks);
+  const categoriesRef = useRef(categories);
+  const membersRef = useRef(members);
+  const currentMemberIdRef = useRef('');
+  useEffect(() => { tasksRef.current = tasks; }, [tasks]);
+  useEffect(() => { categoriesRef.current = categories; }, [categories]);
+  useEffect(() => { membersRef.current = members; }, [members]);
+
   const handleComplete = useCallback(
     async (taskId: string, currentMemberId: string) => {
-      const task = tasks.find(t => t.id === taskId);
-      const category = categories.find(c => c.id === task?.category_id);
-      const member = members.find(m => m.id === currentMemberId);
+      const task = tasksRef.current.find(t => t.id === taskId);
+      const category = categoriesRef.current.find(c => c.id === task?.category_id);
+      const member = membersRef.current.find(m => m.id === currentMemberId);
 
       const result = await completeTask(taskId, currentMemberId, category?.emoji ?? '📦', member?.name);
       if (result) {
@@ -43,7 +52,7 @@ export default function BoardPage() {
         });
       }
     },
-    [tasks, categories, members, completeTask],
+    [completeTask],
   );
 
   const handleEdit = useCallback((task: Task) => {
@@ -56,9 +65,30 @@ export default function BoardPage() {
     if (!open) setEditTask(null);
   }, []);
 
+  const handleAssign = useCallback((taskId: string, memberId: string) => {
+    const currentMember = membersRef.current.find(m => m.id === currentMemberIdRef.current);
+    assignTask(taskId, memberId, currentMemberIdRef.current, currentMember?.name);
+  }, [assignTask]);
+
+  const handleAdd = useCallback((task: Parameters<typeof addTask>[0]) => {
+    const currentMember = membersRef.current.find(m => m.id === currentMemberIdRef.current);
+    return addTask(task, currentMember?.name);
+  }, [addTask]);
+
+  const handleCompleteWithMember = useCallback((taskId: string) => {
+    handleComplete(taskId, currentMemberIdRef.current);
+  }, [handleComplete]);
+
+  const handleSendAssignNotification = useCallback((taskId: string, memberId: string) => {
+    const currentMember = membersRef.current.find(m => m.id === currentMemberIdRef.current);
+    sendAssignNotification(taskId, memberId, currentMemberIdRef.current, currentMember?.name);
+  }, [sendAssignNotification]);
+
   return (
     <AppShell>
       {({ currentMemberId, isChild }) => {
+        currentMemberIdRef.current = currentMemberId;
+
         if (loading) {
           return (
             <div className="flex items-center justify-center py-12">
@@ -66,16 +96,6 @@ export default function BoardPage() {
             </div>
           );
         }
-
-        const currentMember = members.find(m => m.id === currentMemberId);
-
-        const handleAssign = (taskId: string, memberId: string) => {
-          assignTask(taskId, memberId, currentMemberId, currentMember?.name);
-        };
-
-        const handleAdd = (task: Parameters<typeof addTask>[0]) => {
-          return addTask(task, currentMember?.name);
-        };
 
         return (
           <>
@@ -87,11 +107,11 @@ export default function BoardPage() {
               members={members}
               currentMemberId={currentMemberId}
               isChild={isChild}
-              onComplete={(taskId) => handleComplete(taskId, currentMemberId)}
+              onComplete={handleCompleteWithMember}
               onAssign={handleAssign}
               onDelete={deleteTask}
               onReorder={reorderTasks}
-              onSendAssignNotification={(taskId, memberId) => sendAssignNotification(taskId, memberId, currentMemberId, currentMember?.name)}
+              onSendAssignNotification={handleSendAssignNotification}
               onEdit={handleEdit}
             />
             <ReportEffort
@@ -100,7 +120,7 @@ export default function BoardPage() {
               currentMemberId={currentMemberId}
               isChild={isChild}
               onReport={async (targetMemberId, taskTitle, categoryEmoji, targetName, adultOnly) => {
-                await reportEffort(currentMemberId, targetMemberId, taskTitle, categoryEmoji, currentMember?.name, adultOnly);
+                await reportEffort(currentMemberId, targetMemberId, taskTitle, categoryEmoji, membersRef.current.find(m => m.id === currentMemberId)?.name, adultOnly);
                 setCelebration({ show: true, points: 1, memberName: targetName });
               }}
             />
