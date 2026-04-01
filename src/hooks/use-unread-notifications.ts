@@ -1,16 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/lib/supabase-browser';
 import { useRealtimeEvent } from './use-realtime';
-import { ActivityLog, Thanks } from '@/types/database';
 
 const supabase = createClient();
 
 export function useUnreadNotifications(currentMemberId: string) {
   const [unreadCount, setUnreadCount] = useState(0);
-  const memberIdRef = useRef(currentMemberId);
-  useEffect(() => { memberIdRef.current = currentMemberId; }, [currentMemberId]);
+  const [lastSeenAt, setLastSeenAt] = useState<string | null>(null);
 
   const fetchCount = useCallback(async () => {
     if (!currentMemberId) { setUnreadCount(0); return; }
@@ -24,18 +22,16 @@ export function useUnreadNotifications(currentMemberId: string) {
     if (!member) { setUnreadCount(0); return; }
 
     const since = member.last_seen_history_at;
+    setLastSeenAt(since);
 
     const [{ count: logCount }, { count: thanksCount }] = await Promise.all([
       supabase
         .from('activity_logs')
         .select('*', { count: 'exact', head: true })
-        .eq('target_member_id', currentMemberId)
-        .neq('actor_id', currentMemberId)
         .gt('created_at', since),
       supabase
         .from('thanks')
         .select('*', { count: 'exact', head: true })
-        .eq('to_member_id', currentMemberId)
         .gt('created_at', since),
     ]);
 
@@ -47,21 +43,12 @@ export function useUnreadNotifications(currentMemberId: string) {
     fetchCount();
   }, [fetchCount]);
 
-  useRealtimeEvent('activity_logs', 'INSERT', (payload) => {
-    const item = payload.new as ActivityLog;
-    if (
-      item.target_member_id === memberIdRef.current &&
-      item.actor_id !== memberIdRef.current
-    ) {
-      setUnreadCount(prev => prev + 1);
-    }
+  useRealtimeEvent('activity_logs', 'INSERT', () => {
+    setUnreadCount(prev => prev + 1);
   });
 
-  useRealtimeEvent('thanks', 'INSERT', (payload) => {
-    const item = payload.new as Thanks;
-    if (item.to_member_id === memberIdRef.current) {
-      setUnreadCount(prev => prev + 1);
-    }
+  useRealtimeEvent('thanks', 'INSERT', () => {
+    setUnreadCount(prev => prev + 1);
   });
 
   const markAsRead = useCallback(async () => {
@@ -73,5 +60,5 @@ export function useUnreadNotifications(currentMemberId: string) {
       .eq('id', currentMemberId);
   }, [currentMemberId]);
 
-  return { unreadCount, markAsRead };
+  return { unreadCount, lastSeenAt, markAsRead };
 }
