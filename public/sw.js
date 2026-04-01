@@ -1,13 +1,20 @@
-const CACHE_NAME = 'famitask-v1';
+const CACHE_NAME = 'famitask-v2';
+
+// キャッシュ対象の静的アセット
+const STATIC_ASSETS = [
+  '/',
+  '/stats',
+  '/history',
+  '/recurring',
+  '/manifest.json',
+  '/icon-192.png',
+  '/icon-512.png',
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll([
-        '/',
-        '/stats',
-        '/history',
-      ]);
+      return cache.addAll(STATIC_ASSETS);
     })
   );
   self.skipWaiting();
@@ -64,21 +71,47 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Skip Supabase auth requests to avoid interfering with auth token locks
-  if (url.hostname.includes('supabase') || url.pathname.includes('/auth/')) {
+  // Skip Supabase requests (auth, realtime, API)
+  if (url.hostname.includes('supabase')) {
     return;
   }
 
-  // Network first, fall back to cache
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, clone);
+  // Skip auth-related paths
+  if (url.pathname.includes('/auth/')) {
+    return;
+  }
+
+  // Static assets: Cache First (immutable)
+  if (url.pathname.startsWith('/_next/static/') ||
+      url.pathname.match(/\.(png|jpg|jpeg|svg|gif|ico|woff|woff2)$/)) {
+    event.respondWith(
+      caches.match(event.request).then((cached) => {
+        if (cached) return cached;
+        return fetch(event.request).then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          return response;
         });
-        return response;
       })
-      .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // HTML pages & API: Stale-While-Revalidate
+  event.respondWith(
+    caches.match(event.request).then((cached) => {
+      const fetchPromise = fetch(event.request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => cached);
+
+      // キャッシュがあれば即返す、なければネットワークを待つ
+      return cached || fetchPromise;
+    })
   );
 });
