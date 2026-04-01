@@ -20,7 +20,7 @@ interface HeaderProps {
 }
 
 export function Header({ authMember, onSignOut }: HeaderProps) {
-  const { isSupported, permission, isSubscribed, subscribe, unsubscribe } =
+  const { isSupported, permission, isSubscribed, isLoading, error, subscribe, unsubscribe } =
     usePushNotifications(authMember?.id);
 
   const handleToggle = async () => {
@@ -64,28 +64,33 @@ export function Header({ authMember, onSignOut }: HeaderProps) {
               </SheetHeader>
               <div className="px-4 space-y-6">
                 {isSupported && (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      {isSubscribed ? (
-                        <Bell className="w-5 h-5 text-primary" />
-                      ) : (
-                        <BellOff className="w-5 h-5 text-muted-foreground" />
-                      )}
-                      <div>
-                        <p className="text-sm font-medium">プッシュ通知</p>
-                        <p className="text-xs text-muted-foreground">
-                          {permission === 'denied'
-                            ? 'ブラウザの設定で通知がブロックされています'
-                            : 'タスクの追加や完了を通知で受け取ります'}
-                        </p>
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {isSubscribed ? (
+                          <Bell className="w-5 h-5 text-primary" />
+                        ) : (
+                          <BellOff className="w-5 h-5 text-muted-foreground" />
+                        )}
+                        <div>
+                          <p className="text-sm font-medium">プッシュ通知</p>
+                          <p className="text-xs text-muted-foreground">
+                            {permission === 'denied'
+                              ? 'ブラウザの設定で通知がブロックされています'
+                              : 'タスクの追加や完了を通知で受け取ります'}
+                          </p>
+                        </div>
                       </div>
+                      <Switch
+                        checked={isSubscribed}
+                        onCheckedChange={handleToggle}
+                        disabled={permission === 'denied' || isLoading}
+                      />
                     </div>
-                    <Switch
-                      checked={isSubscribed}
-                      onCheckedChange={handleToggle}
-                      disabled={permission === 'denied'}
-                    />
-                  </div>
+                    {error && (
+                      <p className="text-xs text-destructive">{error}</p>
+                    )}
+                  </>
                 )}
                 <hr className="border-border" />
                 <Link
