@@ -6,6 +6,8 @@ type PushState = {
   isSupported: boolean;
   permission: NotificationPermission | 'unsupported';
   isSubscribed: boolean;
+  isLoading: boolean;
+  error: string | null;
   subscribe: () => Promise<void>;
   unsubscribe: () => Promise<void>;
 };
@@ -20,6 +22,8 @@ function getInitialPermission(): NotificationPermission | 'unsupported' {
 export function usePushNotifications(memberId: string | undefined): PushState {
   const [permission, setPermission] = useState(getInitialPermission);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const isSupported = typeof window !== 'undefined'
     && 'serviceWorker' in navigator
     && 'PushManager' in window
@@ -38,35 +42,45 @@ export function usePushNotifications(memberId: string | undefined): PushState {
   const subscribe = useCallback(async () => {
     if (!isSupported || !memberId) return;
 
-    const perm = await Notification.requestPermission();
-    setPermission(perm);
-    if (perm !== 'granted') return;
+    setIsLoading(true);
+    setError(null);
 
-    const reg = await navigator.serviceWorker.ready;
-    const sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
-    });
+    try {
+      const perm = await Notification.requestPermission();
+      setPermission(perm);
+      if (perm !== 'granted') return;
 
-    const json = sub.toJSON();
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+      });
 
-    const res = await fetch('/api/push/subscribe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        member_id: memberId,
-        endpoint: sub.endpoint,
-        p256dh: json.keys?.p256dh,
-        auth: json.keys?.auth,
-      }),
-    });
+      const json = sub.toJSON();
 
-    if (!res.ok) {
-      await sub.unsubscribe();
-      return;
+      const res = await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          member_id: memberId,
+          endpoint: sub.endpoint,
+          p256dh: json.keys?.p256dh,
+          auth: json.keys?.auth,
+        }),
+      });
+
+      if (!res.ok) {
+        await sub.unsubscribe();
+        setError('通知の登録に失敗しました');
+        return;
+      }
+
+      setIsSubscribed(true);
+    } catch {
+      setError('通知の有効化に失敗しました');
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsSubscribed(true);
   }, [isSupported, memberId]);
 
   const unsubscribe = useCallback(async () => {
@@ -88,5 +102,5 @@ export function usePushNotifications(memberId: string | undefined): PushState {
     setIsSubscribed(false);
   }, [isSupported]);
 
-  return { isSupported, permission, isSubscribed, subscribe, unsubscribe };
+  return { isSupported, permission, isSubscribed, isLoading, error, subscribe, unsubscribe };
 }
