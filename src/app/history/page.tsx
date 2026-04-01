@@ -227,18 +227,6 @@ function HistoryContent({
   );
 }
 
-function NewSeparator({ isChild }: { isChild: boolean }) {
-  return (
-    <div className="flex items-center gap-2 my-2">
-      <div className="flex-1 h-px bg-primary" />
-      <span className={`text-primary font-bold shrink-0 ${isChild ? 'text-sm' : 'text-xs'}`}>
-        {isChild ? 'ここからあたらしい' : 'ここから新しい'}
-      </span>
-      <div className="flex-1 h-px bg-primary" />
-    </div>
-  );
-}
-
 function ActivityFeed({
   activityLogs,
   memberMap,
@@ -271,7 +259,7 @@ function ActivityFeed({
             {formatGroupDate(dateKey)}
           </h3>
           <div className="space-y-2">
-            {items.map((item, idx) => {
+            {items.map((item) => {
               const actor = memberMap.get(item.actor_id);
               const target = item.target_member_id ? memberMap.get(item.target_member_id) : null;
               const config = EVENT_CONFIG[item.event_type];
@@ -279,12 +267,9 @@ function ActivityFeed({
                 ? item.category_emoji
                 : config.icon;
               const isUnread = !!(lastSeenAt && new Date(item.created_at).getTime() > new Date(lastSeenAt).getTime());
-              const isFirstUnread = isUnread
-                && (idx === 0 || new Date(items[idx - 1].created_at).getTime() <= new Date(lastSeenAt).getTime());
 
               return (
                 <div key={item.id}>
-                {isFirstUnread && <NewSeparator isChild={isChild} />}
                 <div
                   className={`flex items-center gap-3 p-3 rounded-xl border ${
                     isUnread
@@ -404,14 +389,11 @@ function CompletionsList({
               {formatGroupDate(dateKey)}
             </h3>
             <div className="space-y-2">
-              {items.map((item, idx) => {
+              {items.map((item) => {
                 const member = memberMap.get(item.member_id);
                 const isUnread = !!(lastSeenAt && new Date(item.completed_at).getTime() > new Date(lastSeenAt).getTime());
-                const isFirstUnread = isUnread
-                  && (idx === 0 || new Date(items[idx - 1].completed_at).getTime() <= new Date(lastSeenAt).getTime());
                 return (
                   <div key={item.id}>
-                  {isFirstUnread && <NewSeparator isChild={isChild} />}
                   <div
                     className={`flex items-center gap-3 p-3 rounded-xl border ${
                       isUnread
