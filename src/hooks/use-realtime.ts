@@ -76,9 +76,13 @@ function removeListener(listener: Listener) {
   }
 }
 
+// 初回接続を遅延させることで、初期レンダリングを優先
+const REALTIME_DELAY_MS = 300;
+
 /**
  * Subscribe to a Supabase real-time event on a shared channel.
  * All hooks share a single WebSocket channel for reduced overhead.
+ * Connection is delayed to prioritize initial page render.
  */
 export function useRealtimeEvent(
   table: string,
@@ -92,7 +96,15 @@ export function useRealtimeEvent(
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const listener: Listener = { table, event, filter, callback: (payload: any) => callbackRef.current(payload) };
-    addListener(listener);
-    return () => removeListener(listener);
+
+    // 初期レンダリング完了後にWebSocket接続を開始
+    const timer = setTimeout(() => {
+      addListener(listener);
+    }, REALTIME_DELAY_MS);
+
+    return () => {
+      clearTimeout(timer);
+      removeListener(listener);
+    };
   }, [table, event, filter]);
 }
