@@ -12,6 +12,16 @@ type PushState = {
   unsubscribe: () => Promise<void>;
 };
 
+function waitForServiceWorker(timeoutMs = 5000): Promise<ServiceWorkerRegistration> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Service Worker の準備がタイムアウトしました')), timeoutMs);
+    navigator.serviceWorker.ready.then((reg) => {
+      clearTimeout(timer);
+      resolve(reg);
+    });
+  });
+}
+
 function getInitialPermission(): NotificationPermission | 'unsupported' {
   if (typeof window !== 'undefined' && 'Notification' in window) {
     return Notification.permission;
@@ -32,10 +42,12 @@ export function usePushNotifications(memberId: string | undefined): PushState {
   useEffect(() => {
     if (!isSupported) return;
 
-    navigator.serviceWorker.ready.then((reg) => {
+    waitForServiceWorker().then((reg) => {
       reg.pushManager.getSubscription().then((sub) => {
         setIsSubscribed(!!sub);
       });
+    }).catch(() => {
+      // SW未準備の場合は未購読のまま
     });
   }, [isSupported]);
 
@@ -50,7 +62,7 @@ export function usePushNotifications(memberId: string | undefined): PushState {
       setPermission(perm);
       if (perm !== 'granted') return;
 
-      const reg = await navigator.serviceWorker.ready;
+      const reg = await waitForServiceWorker();
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
@@ -86,7 +98,7 @@ export function usePushNotifications(memberId: string | undefined): PushState {
   const unsubscribe = useCallback(async () => {
     if (!isSupported) return;
 
-    const reg = await navigator.serviceWorker.ready;
+    const reg = await waitForServiceWorker();
     const sub = await reg.pushManager.getSubscription();
     if (sub) {
       const endpoint = sub.endpoint;
