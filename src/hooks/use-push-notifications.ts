@@ -104,8 +104,10 @@ export function usePushNotifications(memberId: string | undefined): PushState {
       }
 
       setIsSubscribed(true);
-    } catch {
-      setError('通知の有効化に失敗しました');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('[push-subscribe]', err);
+      setError(`通知の有効化に失敗しました: ${msg}`);
     } finally {
       setIsLoading(false);
     }
