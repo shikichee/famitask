@@ -58,6 +58,11 @@ export function usePushNotifications(memberId: string | undefined): PushState {
     setError(null);
 
     try {
+      if (!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
+        setError('プッシュ通知の設定が不足しています（VAPID key）');
+        return;
+      }
+
       const perm = await Notification.requestPermission();
       setPermission(perm);
       if (perm !== 'granted') return;
