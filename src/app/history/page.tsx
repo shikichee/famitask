@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { AppShell } from '@/components/app-shell';
 import { useFamilyMembers } from '@/hooks/use-family-members';
 import { useCompletions } from '@/hooks/use-completions';
@@ -84,10 +84,11 @@ export default function HistoryPage() {
 
   return (
     <AppShell>
-      {({ currentMemberId, isChild }) => (
+      {({ currentMemberId, isChild, markAsRead }) => (
         <HistoryContent
           currentMemberId={currentMemberId}
           isChild={isChild}
+          markAsRead={markAsRead}
           completions={isChild ? completions.filter(c => !c.adult_only) : completions}
           activityLogs={activityLogs}
           memberMap={memberMap}
@@ -105,6 +106,7 @@ export default function HistoryPage() {
 function HistoryContent({
   currentMemberId,
   isChild,
+  markAsRead,
   completions,
   activityLogs,
   memberMap,
@@ -116,6 +118,7 @@ function HistoryContent({
 }: {
   currentMemberId: string;
   isChild: boolean;
+  markAsRead: () => Promise<void>;
   completions: Completion[];
   activityLogs: ActivityLog[];
   memberMap: Map<string, FamilyMember>;
@@ -127,6 +130,8 @@ function HistoryContent({
 }) {
   const { thanksList, sendThanks, removeThanks, latestReceivedThanks, clearReceivedThanks } = useThanks(currentMemberId);
   const [confirmTarget, setConfirmTarget] = useState<Completion | null>(null);
+
+  useEffect(() => { markAsRead(); }, [markAsRead]);
   const [deleting, setDeleting] = useState(false);
 
   const handleDelete = async () => {

@@ -7,6 +7,7 @@ export type FamilyMember = {
   total_points: number;
   auth_user_id: string | null;
   is_admin: boolean;
+  last_seen_history_at: string;
 };
 
 export type TaskCategory = {
