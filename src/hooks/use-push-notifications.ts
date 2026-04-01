@@ -12,6 +12,17 @@ type PushState = {
   unsubscribe: () => Promise<void>;
 };
 
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  const array = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) {
+    array[i] = raw.charCodeAt(i);
+  }
+  return array;
+}
+
 function waitForServiceWorker(timeoutMs = 5000): Promise<ServiceWorkerRegistration> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('Service Worker の準備がタイムアウトしました')), timeoutMs);
@@ -70,7 +81,7 @@ export function usePushNotifications(memberId: string | undefined): PushState {
       const reg = await waitForServiceWorker();
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+        applicationServerKey: urlBase64ToUint8Array(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY).buffer as ArrayBuffer,
       });
 
       const json = sub.toJSON();
