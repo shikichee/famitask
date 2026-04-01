@@ -9,6 +9,7 @@ const supabase = createClient();
 
 export function useUnreadNotifications(currentMemberId: string) {
   const [unreadCount, setUnreadCount] = useState(0);
+  const [lastSeenAt, setLastSeenAt] = useState<string | null>(null);
   const memberIdRef = useRef(currentMemberId);
   useEffect(() => { memberIdRef.current = currentMemberId; }, [currentMemberId]);
 
@@ -24,6 +25,7 @@ export function useUnreadNotifications(currentMemberId: string) {
     if (!member) { setUnreadCount(0); return; }
 
     const since = member.last_seen_history_at;
+    setLastSeenAt(since);
 
     const [{ count: logCount }, { count: thanksCount }] = await Promise.all([
       supabase
@@ -73,5 +75,5 @@ export function useUnreadNotifications(currentMemberId: string) {
       .eq('id', currentMemberId);
   }, [currentMemberId]);
 
-  return { unreadCount, markAsRead };
+  return { unreadCount, lastSeenAt, markAsRead };
 }

@@ -84,11 +84,12 @@ export default function HistoryPage() {
 
   return (
     <AppShell>
-      {({ currentMemberId, isChild, markAsRead }) => (
+      {({ currentMemberId, isChild, markAsRead, lastSeenAt }) => (
         <HistoryContent
           currentMemberId={currentMemberId}
           isChild={isChild}
           markAsRead={markAsRead}
+          lastSeenAt={lastSeenAt}
           completions={isChild ? completions.filter(c => !c.adult_only) : completions}
           activityLogs={activityLogs}
           memberMap={memberMap}
@@ -107,6 +108,7 @@ function HistoryContent({
   currentMemberId,
   isChild,
   markAsRead,
+  lastSeenAt,
   completions,
   activityLogs,
   memberMap,
@@ -119,6 +121,7 @@ function HistoryContent({
   currentMemberId: string;
   isChild: boolean;
   markAsRead: () => Promise<void>;
+  lastSeenAt: string | null;
   completions: Completion[];
   activityLogs: ActivityLog[];
   memberMap: Map<string, FamilyMember>;
@@ -163,6 +166,7 @@ function HistoryContent({
             activityLogs={activityLogs}
             memberMap={memberMap}
             isChild={isChild}
+            lastSeenAt={lastSeenAt}
             deleteActivityLog={deleteActivityLog}
           />
         </TabsContent>
@@ -173,6 +177,7 @@ function HistoryContent({
             memberMap={memberMap}
             categories={categories}
             isChild={isChild}
+            lastSeenAt={lastSeenAt}
             currentMemberId={currentMemberId}
             thanksList={thanksList}
             sendThanks={sendThanks}
@@ -222,15 +227,29 @@ function HistoryContent({
   );
 }
 
+function NewSeparator({ isChild }: { isChild: boolean }) {
+  return (
+    <div className="flex items-center gap-2 my-2">
+      <div className="flex-1 h-px bg-primary" />
+      <span className={`text-primary font-bold shrink-0 ${isChild ? 'text-sm' : 'text-xs'}`}>
+        {isChild ? 'ここからあたらしい' : 'ここから新しい'}
+      </span>
+      <div className="flex-1 h-px bg-primary" />
+    </div>
+  );
+}
+
 function ActivityFeed({
   activityLogs,
   memberMap,
   isChild,
+  lastSeenAt,
   deleteActivityLog,
 }: {
   activityLogs: ActivityLog[];
   memberMap: Map<string, FamilyMember>;
   isChild: boolean;
+  lastSeenAt: string | null;
   deleteActivityLog: (id: string) => Promise<void>;
 }) {
   const grouped = useMemo(() => groupByDate(activityLogs, 'created_at'), [activityLogs]);
@@ -252,18 +271,26 @@ function ActivityFeed({
             {formatGroupDate(dateKey)}
           </h3>
           <div className="space-y-2">
-            {items.map((item) => {
+            {items.map((item, idx) => {
               const actor = memberMap.get(item.actor_id);
               const target = item.target_member_id ? memberMap.get(item.target_member_id) : null;
               const config = EVENT_CONFIG[item.event_type];
               const icon = item.event_type === 'task_completed' && item.category_emoji
                 ? item.category_emoji
                 : config.icon;
+              const isUnread = !!(lastSeenAt && new Date(item.created_at).getTime() > new Date(lastSeenAt).getTime());
+              const isFirstUnread = isUnread
+                && (idx === 0 || new Date(items[idx - 1].created_at).getTime() <= new Date(lastSeenAt).getTime());
 
               return (
+                <div key={item.id}>
+                {isFirstUnread && <NewSeparator isChild={isChild} />}
                 <div
-                  key={item.id}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-card border"
+                  className={`flex items-center gap-3 p-3 rounded-xl border ${
+                    isUnread
+                      ? 'bg-primary/10 border-l-primary border-l-2'
+                      : 'bg-card opacity-60'
+                  }`}
                 >
                   <span className={isChild ? 'text-xl' : 'text-lg'}>{icon}</span>
                   <div className="flex-1 min-w-0">
@@ -299,6 +326,7 @@ function ActivityFeed({
                     )}
                   </div>
                 </div>
+                </div>
               );
             })}
           </div>
@@ -313,6 +341,7 @@ function CompletionsList({
   memberMap,
   categories,
   isChild,
+  lastSeenAt,
   currentMemberId,
   thanksList,
   sendThanks,
@@ -325,6 +354,7 @@ function CompletionsList({
   memberMap: Map<string, FamilyMember>;
   categories: TaskCategory[];
   isChild: boolean;
+  lastSeenAt: string | null;
   currentMemberId: string;
   thanksList: Thanks[];
   sendThanks: (completionId: string, fromMemberId: string, toMemberId: string) => Promise<void>;
@@ -374,12 +404,20 @@ function CompletionsList({
               {formatGroupDate(dateKey)}
             </h3>
             <div className="space-y-2">
-              {items.map((item) => {
+              {items.map((item, idx) => {
                 const member = memberMap.get(item.member_id);
+                const isUnread = !!(lastSeenAt && new Date(item.completed_at).getTime() > new Date(lastSeenAt).getTime());
+                const isFirstUnread = isUnread
+                  && (idx === 0 || new Date(items[idx - 1].completed_at).getTime() <= new Date(lastSeenAt).getTime());
                 return (
+                  <div key={item.id}>
+                  {isFirstUnread && <NewSeparator isChild={isChild} />}
                   <div
-                    key={item.id}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-card border"
+                    className={`flex items-center gap-3 p-3 rounded-xl border ${
+                      isUnread
+                        ? 'bg-primary/10 border-l-primary border-l-2'
+                        : 'bg-card opacity-60'
+                    }`}
                   >
                     <span className={isChild ? 'text-xl' : 'text-lg'}>{item.category_emoji}</span>
                     <div className="flex-1 min-w-0">
@@ -448,6 +486,7 @@ function CompletionsList({
                         </>
                       )}
                     </div>
+                  </div>
                   </div>
                 );
               })}
