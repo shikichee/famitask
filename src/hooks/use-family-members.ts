@@ -9,9 +9,9 @@ const isSupabaseConfigured = true;
 import { FamilyMember } from '@/types/database';
 
 const DEMO_MEMBERS: FamilyMember[] = [
-  { id: 'a0000000-0000-0000-0000-000000000001', name: '妻', avatar: '👩', color: '#E91E63', role: 'adult', total_points: 0, auth_user_id: null, is_admin: false },
-  { id: 'a0000000-0000-0000-0000-000000000002', name: '夫', avatar: '👨', color: '#2196F3', role: 'adult', total_points: 0, auth_user_id: null, is_admin: true },
-  { id: 'a0000000-0000-0000-0000-000000000003', name: '娘', avatar: '👧', color: '#FF9800', role: 'child', total_points: 0, auth_user_id: null, is_admin: false },
+  { id: 'a0000000-0000-0000-0000-000000000001', name: '妻', avatar: '👩', color: '#E91E63', role: 'adult', total_points: 0, auth_user_id: null, is_admin: false, last_seen_history_at: new Date().toISOString() },
+  { id: 'a0000000-0000-0000-0000-000000000002', name: '夫', avatar: '👨', color: '#2196F3', role: 'adult', total_points: 0, auth_user_id: null, is_admin: true, last_seen_history_at: new Date().toISOString() },
+  { id: 'a0000000-0000-0000-0000-000000000003', name: '娘', avatar: '👧', color: '#FF9800', role: 'child', total_points: 0, auth_user_id: null, is_admin: false, last_seen_history_at: new Date().toISOString() },
 ];
 
 export function useFamilyMembers() {

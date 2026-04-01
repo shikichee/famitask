@@ -5,14 +5,16 @@ import { Header } from '@/components/layout/header';
 import { BottomNav } from '@/components/layout/bottom-nav';
 import { useCurrentMember } from '@/hooks/use-current-member';
 import { useAuthContext } from '@/components/providers/auth-provider';
+import { useUnreadNotifications } from '@/hooks/use-unread-notifications';
 
 interface AppShellProps {
-  children: (props: { currentMemberId: string; isChild: boolean }) => ReactNode;
+  children: (props: { currentMemberId: string; isChild: boolean; markAsRead: () => Promise<void> }) => ReactNode;
 }
 
 export function AppShell({ children }: AppShellProps) {
   const { currentMemberId, isChild, authLoading } = useCurrentMember();
   const { member, signOut } = useAuthContext();
+  const { unreadCount, markAsRead } = useUnreadNotifications(currentMemberId);
 
   if (authLoading) {
     return (
@@ -31,10 +33,10 @@ export function AppShell({ children }: AppShellProps) {
       />
       <main className="flex-1 pb-20">
         <div className="max-w-lg mx-auto px-4 py-4">
-          {children({ currentMemberId, isChild })}
+          {children({ currentMemberId, isChild, markAsRead })}
         </div>
       </main>
-      <BottomNav isChild={isChild} />
+      <BottomNav isChild={isChild} unreadCount={unreadCount} />
     </>
   );
 }

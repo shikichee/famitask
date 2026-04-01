@@ -11,9 +11,10 @@ const NAV_ITEMS = [
 
 interface BottomNavProps {
   isChild: boolean;
+  unreadCount?: number;
 }
 
-export function BottomNav({ isChild }: BottomNavProps) {
+export function BottomNav({ isChild, unreadCount = 0 }: BottomNavProps) {
   const pathname = usePathname();
 
   return (
@@ -30,7 +31,18 @@ export function BottomNav({ isChild }: BottomNavProps) {
                 ${isActive ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'}
               `}
             >
-              <span className={`text-xl ${isChild ? 'text-2xl' : ''}`}>{item.icon}</span>
+              <span className="relative">
+                <span className={`text-xl ${isChild ? 'text-2xl' : ''}`}>{item.icon}</span>
+                {item.href === '/history' && unreadCount > 0 && (
+                  <span className={`
+                    absolute -top-1 -right-2 flex items-center justify-center
+                    bg-red-500 text-white rounded-full font-bold
+                    ${isChild ? 'min-w-5 h-5 text-xs' : 'min-w-4 h-4 text-[10px]'}
+                  `}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </span>
               <span className={`font-medium ${isChild ? 'text-xs' : 'text-[10px]'}`}>
                 {isChild ? item.childLabel : item.label}
               </span>
