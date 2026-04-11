@@ -74,11 +74,6 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Skip Supabase requests (auth, realtime, API)
-  if (url.hostname.includes('supabase')) {
-    return;
-  }
-
   // Skip auth-related paths
   if (url.pathname.includes('/auth/')) {
     return;

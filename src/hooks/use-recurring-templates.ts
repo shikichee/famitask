@@ -1,47 +1,30 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase-browser';
-import { useRealtimeEvent } from './use-realtime';
+import { usePolling } from './use-polling';
+import {
+  getTemplates as fetchTemplatesAction,
+  createTemplate as createTemplateAction,
+  updateTemplate as updateTemplateAction,
+  deleteTemplate as deleteTemplateAction,
+} from '@/actions/recurring';
 import { RecurringTaskTemplate } from '@/types/database';
-
-const supabase = createClient();
 
 export function useRecurringTemplates() {
   const [templates, setTemplates] = useState<RecurringTaskTemplate[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchTemplates = useCallback(async () => {
-    const { data } = await supabase
-      .from('recurring_task_templates')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (data) setTemplates(data);
+    const data = await fetchTemplatesAction();
+    setTemplates(data);
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch for external data
     fetchTemplates();
   }, [fetchTemplates]);
 
-  useRealtimeEvent('recurring_task_templates', 'INSERT', (payload) => {
-    const newTemplate = payload.new as RecurringTaskTemplate;
-    setTemplates(prev => {
-      if (prev.some(t => t.id === newTemplate.id)) return prev;
-      return [newTemplate, ...prev];
-    });
-  });
-
-  useRealtimeEvent('recurring_task_templates', 'UPDATE', (payload) => {
-    const updated = payload.new as RecurringTaskTemplate;
-    setTemplates(prev => prev.map(t => t.id === updated.id ? updated : t));
-  });
-
-  useRealtimeEvent('recurring_task_templates', 'DELETE', (payload) => {
-    const deleted = payload.old as RecurringTaskTemplate;
-    setTemplates(prev => prev.filter(t => t.id !== deleted.id));
-  });
+  usePolling(fetchTemplates, 5000);
 
   const addTemplate = useCallback(async (template: {
     title: string;
@@ -54,22 +37,7 @@ export function useRecurringTemplates() {
     weeks_of_month: number[] | null;
     generation_time: string;
   }) => {
-    const { data, error } = await supabase
-      .from('recurring_task_templates')
-      .insert(template)
-      .select()
-      .single();
-    if (error) throw new Error(error.message);
-
-    // Activity log
-    if (data) {
-      supabase.from('activity_logs').insert({
-        event_type: 'recurring_template_created',
-        actor_id: template.created_by,
-        task_title: template.title,
-      }).then(() => {}, () => {});
-    }
-
+    const data = await createTemplateAction(template);
     return data;
   }, []);
 
@@ -87,22 +55,12 @@ export function useRecurringTemplates() {
       is_active: boolean;
     }>
   ) => {
-    const { data, error } = await supabase
-      .from('recurring_task_templates')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) throw new Error(error.message);
+    const data = await updateTemplateAction(id, updates);
     return data;
   }, []);
 
   const deleteTemplate = useCallback(async (id: string) => {
-    const { error } = await supabase
-      .from('recurring_task_templates')
-      .delete()
-      .eq('id', id);
-    if (error) throw new Error(error.message);
+    await deleteTemplateAction(id);
   }, []);
 
   const toggleActive = useCallback(async (id: string, isActive: boolean) => {

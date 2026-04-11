@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import webpush from 'web-push';
-import { createClient } from '@/lib/supabase-server';
+import { getAuthMember } from '@/lib/api-auth';
+import { db } from '@/lib/db';
+import { familyMembers, pushSubscriptions } from '@/lib/schema';
+import { eq, ne, inArray } from 'drizzle-orm';
 
 let vapidConfigured = false;
 
@@ -26,41 +29,34 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
   }
 
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
+  const member = await getAuthMember();
+  if (!member) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  // Determine target member IDs
   let targetMemberIds: string[] = member_ids || [];
 
   if (!member_ids && exclude_member_id) {
-    const { data: members } = await supabase
-      .from('family_members')
-      .select('id')
-      .neq('id', exclude_member_id);
-    targetMemberIds = members?.map(m => m.id) ?? [];
+    const members = await db
+      .select({ id: familyMembers.id })
+      .from(familyMembers)
+      .where(ne(familyMembers.id, exclude_member_id));
+    targetMemberIds = members.map(m => m.id);
   } else if (!member_ids && !exclude_member_id) {
-    // No filter: send to all family members
-    const { data: members } = await supabase
-      .from('family_members')
-      .select('id');
-    targetMemberIds = members?.map(m => m.id) ?? [];
+    const members = await db.select({ id: familyMembers.id }).from(familyMembers);
+    targetMemberIds = members.map(m => m.id);
   }
 
   if (targetMemberIds.length === 0) {
     return NextResponse.json({ sent: 0 });
   }
 
-  // Fetch subscriptions for target members
-  const { data: subscriptions } = await supabase
-    .from('push_subscriptions')
-    .select('*')
-    .in('member_id', targetMemberIds);
+  const subscriptions = await db
+    .select()
+    .from(pushSubscriptions)
+    .where(inArray(pushSubscriptions.memberId, targetMemberIds));
 
-  if (!subscriptions?.length) {
+  if (!subscriptions.length) {
     return NextResponse.json({ sent: 0 });
   }
 
@@ -89,12 +85,10 @@ export async function POST(request: NextRequest) {
     })
   );
 
-  // Cleanup expired subscriptions
   if (expiredEndpoints.length > 0) {
-    await supabase
-      .from('push_subscriptions')
-      .delete()
-      .in('endpoint', expiredEndpoints);
+    await db
+      .delete(pushSubscriptions)
+      .where(inArray(pushSubscriptions.endpoint, expiredEndpoints));
   }
 
   const sent = results.filter((r) => r.status === 'fulfilled').length;

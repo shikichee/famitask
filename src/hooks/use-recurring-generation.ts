@@ -1,116 +1,18 @@
 'use client';
 
-import { useEffect, useRef, useCallback } from 'react';
-import { createClient } from '@/lib/supabase-browser';
-import { RecurringTaskTemplate } from '@/types/database';
-import { getTodayJST, getTodayStringJST, shouldGenerateToday, isPastGenerationTime } from '@/lib/recurring-utils';
-
-const supabase = createClient();
+import { useEffect, useRef } from 'react';
 
 export function useRecurringGeneration(currentMemberId: string) {
   const hasRun = useRef(false);
-
-  const generateTodaysTasks = useCallback(async () => {
-    const { data: templates } = await supabase
-      .from('recurring_task_templates')
-      .select('*')
-      .eq('is_active', true);
-
-    if (!templates || templates.length === 0) return;
-
-    const today = getTodayJST();
-    const todayString = getTodayStringJST();
-
-    const matchingTemplates = (templates as RecurringTaskTemplate[]).filter(
-      t => shouldGenerateToday(t, today) && isPastGenerationTime(t)
-    );
-
-    if (matchingTemplates.length === 0) return;
-
-    // Check which tasks already exist for today + skipped (deleted) ones
-    const templateIds = matchingTemplates.map(t => t.id);
-    const [{ data: existingTasks }, { data: skippedTasks }] = await Promise.all([
-      supabase
-        .from('tasks')
-        .select('recurring_template_id')
-        .in('recurring_template_id', templateIds)
-        .eq('task_date', todayString),
-      supabase
-        .from('recurring_task_skips')
-        .select('template_id')
-        .in('template_id', templateIds)
-        .eq('task_date', todayString),
-    ]);
-
-    const existingTemplateIds = new Set(
-      (existingTasks ?? []).map(t => t.recurring_template_id)
-    );
-    const skippedTemplateIds = new Set(
-      (skippedTasks ?? []).map(t => t.template_id)
-    );
-
-    const toGenerate = matchingTemplates.filter(
-      t => !existingTemplateIds.has(t.id) && !skippedTemplateIds.has(t.id)
-    );
-
-    const generatedTitles: string[] = [];
-
-    for (const template of toGenerate) {
-      // Increment positions for unassigned group
-      await supabase.rpc('increment_positions', { p_assigned_to: null });
-
-      // Insert task — unique constraint prevents duplicates from concurrent devices
-      const { data: newTask } = await supabase
-        .from('tasks')
-        .insert({
-          title: template.title,
-          category_id: template.category_id,
-          points: template.points,
-          adult_only: template.adult_only,
-          created_by: template.created_by,
-          is_recurring: true,
-          recurring_template_id: template.id,
-          task_date: todayString,
-          status: 'pending',
-          position: 0,
-        })
-        .select()
-        .maybeSingle();
-
-      // Log activity only if task was actually created (not a duplicate)
-      if (newTask) {
-        generatedTitles.push(newTask.title);
-
-        supabase.from('activity_logs').insert({
-          event_type: 'recurring_task_generated',
-          actor_id: template.created_by,
-          task_title: template.title,
-        }).then(() => {}, () => {});
-      }
-    }
-
-    // Send one notification for all generated tasks (to all family members)
-    if (generatedTitles.length > 0) {
-      const body = generatedTitles.length === 1
-        ? `くりかえしタスク「${generatedTitles[0]}」が追加されました`
-        : `くりかえしタスクが${generatedTitles.length}件追加されました（${generatedTitles.join('、')}）`;
-
-      fetch('/api/push/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: 'くりかえしタスク',
-          body,
-          url: '/',
-        }),
-      }).catch(() => {});
-    }
-  }, []);
 
   useEffect(() => {
     if (hasRun.current || !currentMemberId) return;
     hasRun.current = true;
 
-    generateTodaysTasks();
-  }, [currentMemberId, generateTodaysTasks]);
+    // Trigger server-side recurring task generation
+    fetch('/api/cron/generate-recurring', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    }).catch(() => {});
+  }, [currentMemberId]);
 }
