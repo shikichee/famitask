@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { createClient } from '@/lib/supabase-browser';
-import { useRealtimeEvent } from './use-realtime';
-
-const supabase = createClient();
+import { usePolling } from './use-polling';
+import { getUnreadCount as getUnreadCountAction } from '@/actions/notifications';
+import { updateLastSeen } from '@/actions/family-members';
 
 export function useUnreadNotifications(currentMemberId: string) {
   const [unreadCount, setUnreadCount] = useState(0);
@@ -12,30 +11,9 @@ export function useUnreadNotifications(currentMemberId: string) {
 
   const fetchCount = useCallback(async () => {
     if (!currentMemberId) { setUnreadCount(0); return; }
-
-    const { data: member } = await supabase
-      .from('family_members')
-      .select('last_seen_history_at')
-      .eq('id', currentMemberId)
-      .single();
-
-    if (!member) { setUnreadCount(0); return; }
-
-    const since = member.last_seen_history_at;
+    const { count, lastSeenAt: since } = await getUnreadCountAction(currentMemberId);
+    setUnreadCount(count);
     setLastSeenAt(since);
-
-    const [{ count: logCount }, { count: thanksCount }] = await Promise.all([
-      supabase
-        .from('activity_logs')
-        .select('*', { count: 'exact', head: true })
-        .gt('created_at', since),
-      supabase
-        .from('thanks')
-        .select('*', { count: 'exact', head: true })
-        .gt('created_at', since),
-    ]);
-
-    setUnreadCount((logCount ?? 0) + (thanksCount ?? 0));
   }, [currentMemberId]);
 
   useEffect(() => {
@@ -43,21 +21,12 @@ export function useUnreadNotifications(currentMemberId: string) {
     fetchCount();
   }, [fetchCount]);
 
-  useRealtimeEvent('activity_logs', 'INSERT', () => {
-    setUnreadCount(prev => prev + 1);
-  });
-
-  useRealtimeEvent('thanks', 'INSERT', () => {
-    setUnreadCount(prev => prev + 1);
-  });
+  usePolling(fetchCount, 5000);
 
   const markAsRead = useCallback(async () => {
     if (!currentMemberId) return;
     setUnreadCount(0);
-    await supabase
-      .from('family_members')
-      .update({ last_seen_history_at: new Date().toISOString() })
-      .eq('id', currentMemberId);
+    await updateLastSeen(currentMemberId);
   }, [currentMemberId]);
 
   return { unreadCount, lastSeenAt, markAsRead };

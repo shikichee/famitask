@@ -3,9 +3,7 @@
 import { useState } from 'react';
 import { useCurrentMember } from '@/hooks/use-current-member';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
-import { createClient } from '@/lib/supabase-browser';
-
-const supabase = createClient();
+import { getTemplates } from '@/actions/recurring';
 
 export default function PushTestPage() {
   const { currentMemberId, authLoading } = useCurrentMember();
@@ -73,22 +71,15 @@ export default function PushTestPage() {
     setRecurringResult(null);
 
     try {
-      // Fetch active recurring templates
-      const { data: templates, error } = await supabase
-        .from('recurring_task_templates')
-        .select('*')
-        .eq('is_active', true);
+      const templates = await getTemplates();
+      const activeTemplates = templates.filter(t => t.is_active);
 
-      if (error) {
-        setRecurringResult(`DB error: ${error.message}`);
-        return;
-      }
-      if (!templates || templates.length === 0) {
+      if (activeTemplates.length === 0) {
         setRecurringResult('有効なくりかえしテンプレートがありません');
         return;
       }
 
-      const titles = templates.map(t => t.title);
+      const titles = activeTemplates.map(t => t.title);
       const body = titles.length === 1
         ? `くりかえしタスク「${titles[0]}」が追加されました`
         : `くりかえしタスクが${titles.length}件追加されました（${titles.join('、')}）`;

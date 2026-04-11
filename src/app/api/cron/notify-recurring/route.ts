@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import webpush from 'web-push';
-import { createServiceClient } from '@/lib/supabase-service';
+import { db } from '@/lib/db';
+import { pushSubscriptions } from '@/lib/schema';
+import { inArray } from 'drizzle-orm';
 
 let vapidConfigured = false;
 
@@ -31,14 +33,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
   }
 
-  const supabase = createServiceClient();
+  const subscriptions = await db.select().from(pushSubscriptions);
 
-  // 全メンバーの Push サブスクリプションを取得
-  const { data: subscriptions } = await supabase
-    .from('push_subscriptions')
-    .select('*');
-
-  if (!subscriptions?.length) {
+  if (!subscriptions.length) {
     return NextResponse.json({ sent: 0 });
   }
 
@@ -68,10 +65,9 @@ export async function POST(request: NextRequest) {
   );
 
   if (expiredEndpoints.length > 0) {
-    await supabase
-      .from('push_subscriptions')
-      .delete()
-      .in('endpoint', expiredEndpoints);
+    await db
+      .delete(pushSubscriptions)
+      .where(inArray(pushSubscriptions.endpoint, expiredEndpoints));
   }
 
   const sent = results.filter((r) => r.status === 'fulfilled').length;

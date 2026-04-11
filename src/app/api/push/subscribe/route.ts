@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase-server';
+import { getAuthMember } from '@/lib/api-auth';
+import { db } from '@/lib/db';
+import { pushSubscriptions } from '@/lib/schema';
+import { eq } from 'drizzle-orm';
 
 export async function POST(request: NextRequest) {
   const { member_id, endpoint, p256dh, auth } = await request.json();
@@ -8,23 +11,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
   }
 
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
+  const member = await getAuthMember();
+  if (!member) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { error } = await supabase
-    .from('push_subscriptions')
-    .upsert(
-      { member_id, endpoint, p256dh, auth },
-      { onConflict: 'endpoint' }
-    );
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  await db
+    .insert(pushSubscriptions)
+    .values({ memberId: member_id, endpoint, p256dh, auth })
+    .onConflictDoUpdate({
+      target: pushSubscriptions.endpoint,
+      set: { memberId: member_id, p256dh, auth },
+    });
 
   return NextResponse.json({ ok: true });
 }
@@ -36,17 +34,12 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Missing endpoint' }, { status: 400 });
   }
 
-  const supabase = await createClient();
-
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
+  const member = await getAuthMember();
+  if (!member) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  await supabase
-    .from('push_subscriptions')
-    .delete()
-    .eq('endpoint', endpoint);
+  await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, endpoint));
 
   return NextResponse.json({ ok: true });
 }
