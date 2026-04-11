@@ -32,6 +32,7 @@ export function useThanks(currentMemberId: string) {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch for external data
     fetchThanks();
   }, [fetchThanks]);
 

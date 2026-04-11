@@ -23,6 +23,7 @@ export function useCompletions(options?: { since?: string }) {
   }, [since]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch for external data
     fetchCompletions();
   }, [fetchCompletions, since]);
 

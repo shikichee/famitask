@@ -3,7 +3,7 @@ import webpush from 'web-push';
 import { getAuthMember } from '@/lib/api-auth';
 import { db } from '@/lib/db';
 import { familyMembers, pushSubscriptions } from '@/lib/schema';
-import { eq, ne, inArray } from 'drizzle-orm';
+import { ne, inArray } from 'drizzle-orm';
 
 let vapidConfigured = false;
 

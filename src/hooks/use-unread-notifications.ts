@@ -17,6 +17,7 @@ export function useUnreadNotifications(currentMemberId: string) {
   }, [currentMemberId]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initial fetch for external data
     fetchCount();
   }, [fetchCount]);
 

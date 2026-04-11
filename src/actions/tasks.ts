@@ -2,7 +2,7 @@
 
 import { db } from '@/lib/db';
 import { tasks, taskCategories, completions, activityLogs } from '@/lib/schema';
-import { eq, and, isNull, sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import type { Task, TaskCategory } from '@/types/database';
 
 function toTask(row: typeof tasks.$inferSelect): Task {
